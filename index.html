@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tenisová liga táta &amp; syn</title>
+<title>Tenisová liga: táta, syn</title>
 <style>
   :root {
     --bg:#0b3d2e; --bg2:#062a1f; --accent:#d8f34a; --accent2:#ffd60a;
@@ -102,7 +102,7 @@
 <body>
 <header>
   <span class="ball">🎾</span>
-  <h1>Tenisová liga táta &amp; syn</h1>
+  <h1>Tenisová liga: táta, syn</h1>
   <p>Liga každý s každým · registrace dvojic · výsledky 2 sety + tie-break · tabulka</p>
 </header>
 <main>
@@ -290,8 +290,12 @@ function render() {
   let statusHtml;
   if (state.scheduled) {
     statusHtml = '<span class="status">✅ Zápasy jsou vytvořené – najdete je níže v sekci Zápasy, tabulka se počítá automaticky.</span>';
+  } else if (free === 1) {
+    statusHtml = '<span class="status">📝 Registrace otevřená – zbývá 1 místo (celkem ' + state.maxTeams + " týmů).</span>";
+  } else if (free <= 4) {
+    statusHtml = '<span class="status">📝 Registrace otevřená – zbývají ' + free + " místa (celkem " + state.maxTeams + " týmů).</span>";
   } else if (free > 0) {
-    statusHtml = '<span class="status">📝 Registrace otevřená – zbývá ' + free + (free === 1 ? " místo" : " místa") + " (celkem " + state.maxTeams + " týmů).</span>";
+    statusHtml = '<span class="status">📝 Registrace otevřená – zbývá ' + free + " míst (celkem " + state.maxTeams + " týmů).</span>";
   } else {
     statusHtml = '<span class="status full">🚫 Turnaj je plný (' + state.maxTeams + ' týmů). Čeká se na vytvoření zápasů správcem.</span>';
   }
@@ -299,7 +303,7 @@ function render() {
     "<ol>" +
     "<li>Zaregistrujte svoji dvojici (táta + syn) ve formuláři níže – stačí vyplnit obě jména a kliknout na Registrovat (nebo stisknout Enter).</li>" +
     "<li>Až bude všech " + state.maxTeams + " týmů, správce turnaje vytvoří zápasy – každý tým hraje s každým.</li>" +
-    "<li>Po každém zápase zapište výsledek do sekce Zápasy: 2 sety, případně tie-break při 1:1 na sety, a datum. Tabulka se aktualizuje sama.</li>" +
+    "<li>Po každém zápase zapište výsledek do sekce Zápasy: 2 sety, případně tie-break při 1:1 na sety, a datum. Tabulka se následně aktualizuje sama.</li>" +
     "</ol>" + statusHtml;
 
   const list = document.getElementById("teamList");
