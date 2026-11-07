@@ -1,4 +1,4 @@
-# Veteráni & Budoucnost: Pražská deblová liga
+# Veteráni a naděje
 
 Jednoduchá webová aplikace pro amatérskou tenisovou ligu párů rodič + dítě, formát ligy – každý hraje s každým.
 
