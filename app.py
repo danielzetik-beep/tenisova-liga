@@ -320,7 +320,7 @@ class Handler(BaseHTTPRequestHandler):
 
 def main():
     init_db()
-    port = int(os.environ.get("PORT", "8000"))
+    port = int(os.environ.get("PORT", "8899"))
     server = ThreadingHTTPServer(("0.0.0.0", port), Handler)
     print(f"Běží na http://localhost:{port}")
     server.serve_forever()
