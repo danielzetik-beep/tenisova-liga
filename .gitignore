@@ -1,0 +1,5 @@
+liga.db
+liga.db-wal
+liga.db-shm
+__pycache__/
+*.log
