@@ -5,77 +5,127 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tenisová liga táta &amp; syn</title>
 <style>
-  :root { --bg:#0f5132; --card:#ffffff; --accent:#ffc107; --ink:#212529; }
+  :root {
+    --bg:#0b3d2e; --bg2:#062a1f; --accent:#d8f34a; --accent2:#ffd60a;
+    --card:#ffffff; --ink:#17211b; --muted:#6b7a70; --line:#e3eae5; --win:#eefbe0;
+  }
   * { box-sizing: border-box; }
-  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background:#e8f5ec; color:var(--ink); }
-  header { background:var(--bg); color:#fff; padding:16px 24px; text-align:center; }
-  header h1 { margin:0; font-size:1.4rem; }
-  header p { margin:4px 0 0; opacity:.85; font-size:.9rem; }
-  main { max-width:1100px; margin:0 auto; padding:20px 16px 60px; }
-  section { background:var(--card); border-radius:12px; padding:18px 20px; margin-bottom:20px; box-shadow:0 1px 4px rgba(0,0,0,.08); }
-  h2 { margin-top:0; font-size:1.1rem; color:var(--bg); }
+  body {
+    margin:0; color:var(--ink); background:#f2f5f3;
+    font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  }
+  header {
+    background: linear-gradient(135deg, var(--bg2) 0%, var(--bg) 60%, #14532d 100%);
+    color:#fff; text-align:center; padding:34px 20px 30px;
+    border-bottom:4px solid var(--accent);
+  }
+  header .ball { font-size:2rem; display:block; margin-bottom:6px; }
+  header h1 { margin:0; font-size:2rem; font-weight:800; letter-spacing:.5px; text-transform:uppercase; }
+  header p { margin:8px 0 0; opacity:.85; font-size:.95rem; }
+  main { max-width:1080px; margin:0 auto; padding:24px 16px 60px; }
+  section.card {
+    background:var(--card); border-radius:16px; padding:22px 24px; margin-bottom:22px;
+    box-shadow:0 2px 10px rgba(11,61,46,.08); border:1px solid var(--line);
+  }
+  h2 {
+    margin:0 0 14px; font-size:1.05rem; font-weight:800; text-transform:uppercase;
+    letter-spacing:.6px; color:var(--bg); display:flex; align-items:center; gap:8px;
+  }
+  h2::before { content:""; width:6px; height:18px; background:var(--accent); border-radius:3px; display:inline-block; }
   .reg-form { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
-  .reg-form label { display:flex; flex-direction:column; font-size:.8rem; gap:4px; flex:1; min-width:160px; }
-  input, button { font:inherit; padding:8px 10px; border-radius:8px; border:1px solid #ccc; }
-  button { background:var(--bg); color:#fff; border:none; cursor:pointer; }
-  button:hover { filter:brightness(1.1); }
-  button.secondary { background:#6c757d; }
-  button.danger { background:#dc3545; }
-  button:disabled { background:#adb5bd; cursor:not-allowed; }
-  .teams { list-style:none; padding:0; margin:14px 0 0; display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:8px; }
-  .teams li { background:#f1f8f4; border:1px solid #d5e8dc; border-radius:8px; padding:8px 12px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
-  .teams li button { padding:2px 8px; font-size:.8rem; }
-  table { border-collapse:collapse; width:100%; font-size:.92rem; }
-  th, td { padding:8px 10px; text-align:center; border-bottom:1px solid #eef4f0; }
-  th { background:#f1f8f4; color:var(--bg); }
-  td:first-child, th:first-child { text-align:left; }
-  tr.leader td { background:#fff8e1; font-weight:700; }
-  .match { border:1px solid #d5e8dc; border-radius:10px; background:#fbfdfb; padding:10px 12px; margin-bottom:10px; }
-  .match .pair { display:flex; justify-content:space-between; gap:8px; font-weight:600; margin-bottom:8px; flex-wrap:wrap; }
-  .match .pair .winner { color:#b8860b; }
-  .score-line { display:flex; gap:6px; align-items:center; flex-wrap:wrap; font-size:.85rem; margin-top:6px; }
-  .score-line input[type=number] { width:52px; }
-  .score-line input[type=date] { flex:1; min-width:130px; }
-  .score-line .lbl { color:#6c757d; }
-  .played-date { font-size:.78rem; color:#6c757d; margin-top:4px; }
-  .msg { padding:8px 12px; border-radius:8px; margin-top:10px; font-size:.9rem; display:none; }
-  .msg.error { display:block; background:#f8d7da; color:#842029; }
-  .msg.ok { display:block; background:#d1e7dd; color:#0f5132; }
-  .note { font-size:.85rem; color:#6c757d; }
+  .reg-form label { display:flex; flex-direction:column; font-size:.78rem; font-weight:600; color:var(--muted); gap:5px; flex:1; min-width:170px; text-transform:uppercase; letter-spacing:.4px; }
+  input, button { font:inherit; padding:10px 12px; border-radius:10px; border:1px solid var(--line); }
+  input:focus { outline:2px solid var(--accent); border-color:transparent; }
+  button {
+    background:var(--bg); color:#fff; border:none; cursor:pointer; font-weight:700;
+    padding:10px 18px; border-radius:10px; transition: transform .05s ease, filter .15s ease;
+  }
+  button:hover { filter:brightness(1.15); }
+  button:active { transform:scale(.97); }
+  button.secondary { background:#5b6b60; }
+  button.danger { background:#c0392b; }
+  button:disabled { background:#b9c4bd; cursor:not-allowed; }
+  .teams { list-style:none; padding:0; margin:16px 0 0; display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:10px; }
+  .teams li {
+    background:#f6faf7; border:1px solid var(--line); border-radius:12px; padding:10px 14px;
+    display:flex; justify-content:space-between; align-items:center; gap:8px; font-weight:600;
+  }
+  .teams li button { padding:4px 10px; font-size:.78rem; border-radius:8px; }
+  table { border-collapse:separate; border-spacing:0; width:100%; font-size:.92rem; }
+  th, td { padding:10px 12px; text-align:center; }
+  th {
+    background:var(--bg); color:#fff; font-size:.75rem; text-transform:uppercase; letter-spacing:.5px;
+  }
+  th:first-child { border-radius:10px 0 0 0; text-align:left; }
+  th:last-child { border-radius:0 10px 0 0; }
+  td { border-bottom:1px solid var(--line); }
+  td:first-child { text-align:left; font-weight:700; }
+  tbody tr:nth-child(even) { background:#f6faf7; }
+  tbody tr.leader { background:var(--win); }
+  tbody tr.leader td:first-child::after { content:" 👑"; }
+  .rank { display:inline-block; width:24px; height:24px; line-height:24px; border-radius:50%; background:#e3eae5; font-weight:800; font-size:.8rem; margin-right:8px; text-align:center; }
+  tr:nth-child(1) .rank { background:var(--accent2); }
+  tr:nth-child(2) .rank { background:#cfd8d3; }
+  tr:nth-child(3) .rank { background:#e8c39a; }
+  .matches { display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:14px; }
+  .match {
+    border:1px solid var(--line); border-radius:14px; background:#fbfdfb; overflow:hidden;
+    transition: box-shadow .15s ease;
+  }
+  .match:hover { box-shadow:0 3px 12px rgba(11,61,46,.12); }
+  .match .pair { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:12px 14px; font-weight:700; background:#fff; }
+  .match .pair .mid { color:var(--muted); font-size:.8rem; font-weight:700; text-transform:uppercase; }
+  .match .pair .winner { color:#8a6d00; }
+  .match.decided { border-left:5px solid var(--accent2); }
+  .score-line { display:flex; gap:6px; align-items:center; flex-wrap:wrap; padding:10px 14px; background:#f1f6f2; border-top:1px solid var(--line); font-size:.85rem; }
+  .score-line input[type=number] { width:50px; padding:7px 8px; }
+  .score-line input[type=date] { flex:1; min-width:120px; padding:7px 8px; }
+  .score-line .lbl { color:var(--muted); font-weight:600; font-size:.75rem; text-transform:uppercase; }
+  .score-line button { padding:7px 12px; font-size:.82rem; }
+  .played-date { font-size:.78rem; color:var(--muted); padding:6px 14px 10px; background:#f1f6f2; }
+  .msg { padding:10px 14px; border-radius:10px; margin-top:12px; font-size:.9rem; font-weight:600; display:none; }
+  .msg.error { display:block; background:#fdecea; color:#a02c21; border:1px solid #f5c6c0; }
+  .msg.ok { display:block; background:#eaf7e0; color:#2e6b1f; border:1px solid #cdeab8; }
+  .note { font-size:.85rem; color:var(--muted); }
+  .admin-row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:16px; }
+  #adminToggle { background:transparent; color:var(--muted); border:1px solid var(--line); font-weight:600; }
+  #adminToggle:hover { color:var(--bg); }
+  #adminControls { display:none; gap:10px; flex-wrap:wrap; align-items:center; }
 </style>
 </head>
 <body>
 <header>
-  <h1>🎾 Tenisová liga táta &amp; syn</h1>
-  <p>Liga každý s každým – registrace dvojic, zadávání výsledků (2 sety + tie-break) a tabulka.</p>
+  <span class="ball">🎾</span>
+  <h1>Tenisová liga táta &amp; syn</h1>
+  <p>Liga každý s každým · registrace dvojic · výsledky 2 sety + tie-break · tabulka</p>
 </header>
 <main>
-  <section id="regSection">
+  <section class="card" id="regSection">
     <h2>Registrace dvojice</h2>
-    <div class="reg-form">
-      <label>Jméno táty <input id="father" placeholder="např. Petr"></label>
-      <label>Jméno syna <input id="son" placeholder="např. Honza"></label>
-      <button onclick="addTeam()">Registrovat</button>
-    </div>
+    <form class="reg-form" onsubmit="event.preventDefault(); addTeam();">
+      <label>Jméno táty <input id="father" placeholder="např. Petr" required></label>
+      <label>Jméno syna <input id="son" placeholder="např. Honza" required></label>
+      <button type="submit">Registrovat ⏎</button>
+    </form>
     <div id="msg" class="msg"></div>
     <ul id="teamList" class="teams"></ul>
     <p class="note" id="regNote"></p>
-    <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+    <div class="admin-row">
       <button id="adminToggle" class="secondary" onclick="toggleAdmin()">🔒 Admin</button>
-      <span id="adminControls" style="display:none; gap:10px; flex-wrap:wrap; align-items:center;">
+      <span id="adminControls">
         <button id="schedBtn" onclick="createSchedule()">Vytvořit zápasy (každý s každým)</button>
         <button class="danger" onclick="resetAll()">Vymazat vše a začít znovu</button>
       </span>
     </div>
-    <div id="adminPanel" style="display:none; margin-top:10px;">
-      <div class="reg-form">
-        <label>Admin PIN <input id="pin" type="password" placeholder="PIN"></label>
-        <button onclick="unlockAdmin()">Odemknout</button>
-      </div>
+    <div id="adminPanel" style="display:none; margin-top:12px;">
+      <form class="reg-form" onsubmit="event.preventDefault(); unlockAdmin();">
+        <label>Admin PIN <input id="pin" type="password" placeholder="PIN" required></label>
+        <button type="submit">Odemknout ⏎</button>
+      </form>
     </div>
   </section>
 
-  <section id="tableSection" style="display:none;">
+  <section class="card" id="tableSection" style="display:none;">
     <h2>Tabulka</h2>
     <table id="standings">
       <thead>
@@ -86,9 +136,9 @@
     <p class="note">Za výhru jsou 2 body. Řazení: body, rozdíl setů, rozdíl gemů.</p>
   </section>
 
-  <section id="matchesSection" style="display:none;">
+  <section class="card" id="matchesSection" style="display:none;">
     <h2>Zápasy</h2>
-    <div id="matchList"></div>
+    <div id="matchList" class="matches"></div>
   </section>
 </main>
 
@@ -156,7 +206,7 @@ async function removeTeam(id) {
     state = await api("/api/teams/" + id + "/delete", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({pin: document.getElementById("pin").value || window.__pin || ""})
+      body: JSON.stringify({pin: window.__pin || ""})
     });
     showMsg("Tým odebrán.", true);
     render();
@@ -217,7 +267,7 @@ function teamName(t) {
 }
 
 function scoreText(m) {
-  if (m.s1a === null) return "";
+  if (m.s1a === null) return "—";
   let s = m.s1a + ":" + m.s1b + ", " + m.s2a + ":" + m.s2b;
   if (m.tb1 !== null) s += " (TB " + m.tb1 + ":" + m.tb2 + ")";
   return s;
@@ -255,8 +305,8 @@ function render() {
     state.standings.forEach((r, i) => {
       const tr = document.createElement("tr");
       if (i === 0 && r.played > 0) tr.className = "leader";
-      tr.innerHTML = "<td>" + teamName(r.team) + "</td><td>" + r.played + "</td><td>" + r.wins +
-        "</td><td>" + r.losses + "</td><td>" + r.sets + "</td><td>" + r.games + "</td><td>" + r.points + "</td>";
+      tr.innerHTML = '<td><span class="rank">' + (i + 1) + '</span>' + teamName(r.team) + "</td><td>" + r.played + "</td><td>" + r.wins +
+        "</td><td>" + r.losses + "</td><td>" + r.sets + "</td><td>" + r.games + "</td><td><strong>" + r.points + "</strong></td>";
       tbody.appendChild(tr);
     });
 
@@ -270,41 +320,40 @@ function render() {
 
 function renderMatch(m) {
   const div = document.createElement("div");
-  div.className = "match";
+  div.className = "match" + (m.s1a !== null ? " decided" : "");
   const w1 = m.winner_id === m.team1.id;
   const w2 = m.winner_id === m.team2.id;
   const pair = document.createElement("div");
   pair.className = "pair";
-  const decided = m.s1a !== null;
   pair.innerHTML =
     '<span class="' + (w1 ? "winner" : "") + '">' + teamName(m.team1) + "</span>" +
-    '<span>' + (decided ? scoreText(m) : "—") + "</span>" +
+    '<span class="mid">' + scoreText(m) + "</span>" +
     '<span class="' + (w2 ? "winner" : "") + '">' + teamName(m.team2) + "</span>";
   div.appendChild(pair);
 
   const row = document.createElement("div");
   row.className = "score-line";
   row.innerHTML =
-    '<span class="lbl">Set 1:</span>' +
+    '<span class="lbl">Set 1</span>' +
     '<input type="number" min="0" id="s1a-' + m.id + '" value="' + (m.s1a ?? "") + '">' +
     '<span>:</span>' +
     '<input type="number" min="0" id="s1b-' + m.id + '" value="' + (m.s1b ?? "") + '">' +
-    '<span class="lbl">Set 2:</span>' +
+    '<span class="lbl">Set 2</span>' +
     '<input type="number" min="0" id="s2a-' + m.id + '" value="' + (m.s2a ?? "") + '">' +
     '<span>:</span>' +
     '<input type="number" min="0" id="s2b-' + m.id + '" value="' + (m.s2b ?? "") + '">' +
-    '<span class="lbl">TB (při 1:1):</span>' +
+    '<span class="lbl">TB 1:1</span>' +
     '<input type="number" min="0" id="tb1-' + m.id + '" value="' + (m.tb1 ?? "") + '">' +
     '<span>:</span>' +
     '<input type="number" min="0" id="tb2-' + m.id + '" value="' + (m.tb2 ?? "") + '">' +
     '<input type="date" id="d-' + m.id + '" value="' + (m.played || "") + '" title="Datum zápasu">' +
     '<button onclick="saveResult(' + m.id + ')">Uložit</button>' +
-    (decided ? '<button class="secondary" onclick="clearResult(' + m.id + ')">Smazat</button>' : '');
+    (m.s1a !== null ? '<button class="secondary" onclick="clearResult(' + m.id + ')">Smazat</button>' : '');
   div.appendChild(row);
   if (m.played) {
     const d = document.createElement("div");
     d.className = "played-date";
-    d.textContent = "Hráno: " + m.played;
+    d.textContent = "🗓️ Hráno: " + m.played;
     div.appendChild(d);
   }
   return div;
