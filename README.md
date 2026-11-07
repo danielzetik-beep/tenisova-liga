@@ -1,10 +1,10 @@
-# Tenisová liga táta & syn
+# Veteráni & Budoucnost: Pražská deblová liga
 
-Jednoduchá webová aplikace pro amatérský tenisový turnaj dvojic táta + syn, formát ligy – každý hraje s každým.
+Jednoduchá webová aplikace pro amatérskou tenisovou ligu párů rodič + dítě, formát ligy – každý hraje s každým.
 
 ## Funkce
 
-- Registrace dvojice (jméno táty a syna), max 8 týmů – při 8 týmech je turnaj plný
+- Registrace páru (jméno rodiče a dítěte), max 8 týmů – při 8 týmech je turnaj plný
 - Vytvoření zápasů „každý s každým" (u 8 týmů 28 zápasů)
 - Zadávání výsledku: 2 sety (gemy) + při stavu 1:1 na sety výsledek tie-breaku, plus datum zápasu
 - Tabulka: pořadí podle bodů (2 za výhru), pak rozdíl setů a rozdíl gemů
@@ -34,7 +34,7 @@ Doporučeno: **PythonAnywhere** (zdarma, běží pořád, data `liga.db` jsou tr
 1. Založte si free účet na pythonanywhere.com.
 2. V konzoli **Bash** na PythonAnywhere stáhněte projekt: `git clone https://github.com/danielzetik-beep/tenisova-liga.git`
 3. Jděte na záložku **Web** → **Add a new web app** → zvolte **Manual configuration** a verzi Pythonu 3.x.
-4. U „Source code" zadejte cestu `/home/<vas-ucet>/tenisova-liga` a u „WSGI configuration file" cestu `/home/<vas-ucet>/tenisova-liga/wsgi.py`.
+4. U „Source code" zadejte cestu `/home/<vas-ucet>/tenisova-liga` a u „WSGI configuration file" cestu `/home/<vas-ucet>/tenisova-liga/wsgi.py` (nebo do výchozího WSGI souboru vložte obsah našeho `wsgi.py`).
 5. Klikněte na **Reload** – stránka poběží na `https://<vas-ucet>.pythonanywhere.com`.
 6. Volitelně změňte admin PIN: v souboru `wsgi.py` nahoře přidejte řádek `os.environ["ADMIN_PIN"] = "vaseheslo"` před `from app import ...`.
 
