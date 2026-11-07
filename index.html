@@ -107,16 +107,13 @@
 </header>
 <main>
   <section class="card" id="aboutBox">
-    <h2>Proč to děláme</h2>
-    <p style="margin:0; line-height:1.7;">
-      S dětmi teď hrajeme tenis v mladších žácích a chceme, aby je to bavilo i dál.
-      Proto hrajeme společně – každý tým tvoří <strong>pár rodič + dítě</strong>, trénujeme spolu
-      a udržujeme u dětí motivaci a radost z tenisu. 🎾
-    </p>
-    <p style="margin:12px 0 0; line-height:1.7;">
-      Nejde o žádný závazek odehrát zápasy v přesně určeném čase – <strong>jde hlavně o zábavu</strong>.
-      Ale pozor: <strong>vítězný tým bude mít určitě minimálně pohár! 🏆</strong>
-    </p>
+    <h2>O co tady jde? 🎾</h2>
+    <ul style="margin:0; padding-left:20px; line-height:1.8;">
+      <li><strong>CÍL:</strong> Udržet u dětí vášeň pro tenis, podpořit jejich motivaci v mladších žácích a posunout je dál.</li>
+      <li><strong>TÝM:</strong> Rodič + dítě. Zvedáme se z laviček, jdeme společně na kurt a zažíváme tenis jako parťáci!</li>
+      <li><strong>PRAVIDLA:</strong> Žádný stres ani pevnou rukou diktované termíny. Zápasy si plánujete sami, prvořadá je zábava a komunitní pohoda.</li>
+      <li><strong>ODMĚNA:</strong> Čest, sláva a trofej pro šampióny! Vítězný pár si domů odnese opravdový <strong>pohár</strong>! 🏆</li>
+    </ul>
   </section>
 
   <section class="card" id="infoBox">
@@ -315,7 +312,7 @@ function render() {
   info.innerHTML =
     "<ol>" +
     "<li>Zaregistrujte svůj pár (rodič + dítě) ve formuláři níže – stačí vyplnit obě jména a kliknout na Registrovat (nebo stisknout Enter).</li>" +
-    "<li>Až bude všech " + state.maxTeams + " týmů, správce turnaje vytvoří zápasy – každý tým hraje s každým.</li>" +
+    "<li>Až bude všech " + state.maxTeams + " týmů, aplikace vytvoří zápasy – každý tým hraje s každým.</li>" +
     "<li>Po každém zápase zapište výsledek do sekce Zápasy: 2 sety, případně tie-break při 1:1 na sety, a datum. Tabulka se následně aktualizuje sama.</li>" +
     "</ol>" + statusHtml;
 
