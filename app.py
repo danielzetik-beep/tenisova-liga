@@ -7,6 +7,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 BASE = os.path.dirname(os.path.abspath(__file__))
 DB = os.path.join(BASE, "liga.db")
 MAX_TEAMS = 8
+ADMIN_PIN = os.environ.get("ADMIN_PIN", "tenis")
 
 lock = threading.Lock()
 
@@ -182,8 +183,20 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/teams":
             self.add_team(data)
+        elif path == "/api/admin":
+            if str(data.get("pin", "")) == ADMIN_PIN:
+                self.send_json({"ok": True})
+            else:
+                self.send_json({"error": "Špatný PIN."}, 403)
         elif path == "/api/schedule":
-            self.create_schedule()
+            self.create_schedule(data)
+        elif path.startswith("/api/teams/") and path.endswith("/delete"):
+            try:
+                team_id = int(path.split("/")[3])
+            except ValueError:
+                self.send_json({"error": "Špatné ID týmu"}, 400)
+                return
+            self.delete_team(team_id, data)
         elif path.startswith("/api/match/") and path.endswith("/result"):
             try:
                 match_id = int(path.split("/")[3])
@@ -199,26 +212,25 @@ class Handler(BaseHTTPRequestHandler):
                 return
             self.clear_result(match_id)
         elif path == "/api/reset":
-            self.reset()
+            self.reset(data)
         else:
             self.send_json({"error": "Nenalezeno"}, 404)
 
-    def do_DELETE(self):
-        path = self.path.split("?")[0]
-        if path.startswith("/api/teams/"):
-            try:
-                team_id = int(path.split("/")[3])
-            except ValueError:
-                self.send_json({"error": "Špatné ID týmu"}, 400)
+    def check_admin(self, data):
+        if str(data.get("pin", "")) != ADMIN_PIN:
+            self.send_json({"error": "Tato akce je jen pro správce (špatný PIN)."}, 403)
+            return False
+        return True
+
+    def delete_team(self, team_id, data):
+        if not self.check_admin(data):
+            return
+        with lock, get_db() as con:
+            if con.execute("SELECT value FROM meta WHERE key='schedule'").fetchone():
+                self.send_json({"error": "Zápasy už jsou vytvořené, registrace je uzavřená."}, 400)
                 return
-            with lock, get_db() as con:
-                if con.execute("SELECT value FROM meta WHERE key='schedule'").fetchone():
-                    self.send_json({"error": "Zápasy už jsou vytvořené, registrace je uzavřená."}, 400)
-                    return
-                con.execute("DELETE FROM teams WHERE id = ?", (team_id,))
-                self.send_json(compute_state(con))
-        else:
-            self.send_json({"error": "Nenalezeno"}, 404)
+            con.execute("DELETE FROM teams WHERE id = ?", (team_id,))
+            self.send_json(compute_state(con))
 
     def add_team(self, data):
         father = str(data.get("father", "")).strip()
@@ -237,7 +249,9 @@ class Handler(BaseHTTPRequestHandler):
             con.execute("INSERT INTO teams (father, son) VALUES (?, ?)", (father, son))
             self.send_json(compute_state(con))
 
-    def create_schedule(self):
+    def create_schedule(self, data):
+        if not self.check_admin(data):
+            return
         with lock, get_db() as con:
             if con.execute("SELECT value FROM meta WHERE key='schedule'").fetchone():
                 self.send_json({"error": "Zápasy už jsou vytvořené."}, 400)
@@ -310,7 +324,9 @@ class Handler(BaseHTTPRequestHandler):
             )
             self.send_json(compute_state(con))
 
-    def reset(self):
+    def reset(self, data):
+        if not self.check_admin(data):
+            return
         with lock, get_db() as con:
             con.execute("DELETE FROM teams")
             con.execute("DELETE FROM matches")
