@@ -8,7 +8,8 @@ Jednoduchá webová aplikace pro amatérský tenisový turnaj dvojic táta + syn
 - Vytvoření zápasů „každý s každým" (u 8 týmů 28 zápasů)
 - Zadávání výsledku: 2 sety (gemy) + při stavu 1:1 na sety výsledek tie-breaku, plus datum zápasu
 - Tabulka: pořadí podle bodů (2 za výhru), pak rozdíl setů a rozdíl gemů
-- Výsledek lze upravit nebo smazat, celý turnaj lze vymazat a začít znovu
+- Výsledek lze upravit nebo smazat
+- Admin sekce chráněná PINem (tlačítko 🔒 Admin): vytvoření zápasů, odebrání týmu a „vymazat vše“ vidí jen správce. Výchozí PIN je `tenis`, změnit ho lze proměnnou prostředí `ADMIN_PIN` (např. `set ADMIN_PIN=mojeheslo` před `python app.py` na Windows)
 
 ## Spuštění
 
