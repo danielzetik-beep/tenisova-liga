@@ -9,9 +9,9 @@ Jednoduchá webová aplikace pro amatérský tenisový turnaj dvojic táta + syn
 - Zadávání výsledku: 2 sety (gemy) + při stavu 1:1 na sety výsledek tie-breaku, plus datum zápasu
 - Tabulka: pořadí podle bodů (2 za výhru), pak rozdíl setů a rozdíl gemů
 - Výsledek lze upravit nebo smazat
-- Admin sekce chráněná PINem (tlačítko 🔒 Admin): vytvoření zápasů, odebrání týmu a „vymazat vše“ vidí jen správce. Výchozí PIN je `tenis`, změnit ho lze proměnnou prostředí `ADMIN_PIN` (např. `set ADMIN_PIN=mojeheslo` před `python app.py` na Windows)
+- Admin sekce chráněná PINem (tlačítko 🔒 Admin): vytvoření zápasů, odebrání týmu a „vymazat vše“ vidí jen správce. Výchozí PIN je `tenis`, změnit ho lze proměnnou prostředí `ADMIN_PIN` (lokálně např. `set ADMIN_PIN=mojeheslo` před `python app.py` na Windows; na PythonAnywhere přidejte řádek `os.environ["ADMIN_PIN"] = "vaseheslo"` do `wsgi.py`)
 
-## Spuštění
+## Spuštění lokálně
 
 Potřeba je jen Python 3 (nic se neinstaluje):
 
@@ -29,12 +29,13 @@ Spusťte aplikaci na počítači, který běží nonstop. Zjistěte jeho IP adre
 
 ### Veřejná adresa pro kohokoliv (z internetu)
 
-Nasazení na Render (zdarma, přímo z GitHubu):
+Doporučeno: **PythonAnywhere** (zdarma, běží pořád, data `liga.db` jsou trvalá) na adrese `https://<vas-ucet>.pythonanywhere.com`:
 
-1. Na render.com se přihlaste účtem GitHub.
-2. **New → Web Service** → připojte repozitář `danielzetik-beep/tenisova-liga`.
-3. Runtime: **Python 3**, Start Command: `python app.py` (port nastaví Render sám přes proměnnou PORT).
-4. Instance Type: **Free** → Create Web Service.
-5. Po pár minutách dostanete veřejnou adresu, např. `https://tenisova-liga.onrender.com` – tu pošlete kamarádům.
+1. Založte si free účet na pythonanywhere.com.
+2. V konzoli **Bash** na PythonAnywhere stáhněte projekt: `git clone https://github.com/danielzetik-beep/tenisova-liga.git`
+3. Jděte na záložku **Web** → **Add a new web app** → zvolte **Manual configuration** a verzi Pythonu 3.x.
+4. U „Source code" zadejte cestu `/home/<vas-ucet>/tenisova-liga` a u „WSGI configuration file" cestu `/home/<vas-ucet>/tenisova-liga/wsgi.py`.
+5. Klikněte na **Reload** – stránka poběží na `https://<vas-ucet>.pythonanywhere.com`.
+6. Volitelně změňte admin PIN: v souboru `wsgi.py` nahoře přidejte řádek `os.environ["ADMIN_PIN"] = "vaseheslo"` před `from app import ...`.
 
-Poznámka: free varianta Render po ~15 min nečinnosti usíná (první požadavek pak trvá pár sekund) a při restartu služby se soubor `liga.db` může vymazat – výsledky si případně poznamenejte, nebo zvažte placený/always-on plán. Pro čistě lokální provoz použijte variantu výše (data zůstávají na vašem počítači).
+Alternativa: **Render** (zdarma, přímo z GitHubu) – New → Web Service → repozitář, Runtime Python 3, Start Command `python app.py`, Instance Type Free. Free varianta po ~15 min usíná a při restartu může `liga.db` smazat; PythonAnywhere je pro tento turnaj spolehlivější. Pro čistě lokální provoz použijte variantu výše (data zůstávají na vašem počítači).
