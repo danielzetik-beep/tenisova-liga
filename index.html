@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tenisová liga táta &amp; syn</title>
+<style>
+  :root { --bg:#0f5132; --card:#ffffff; --accent:#ffc107; --ink:#212529; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background:#e8f5ec; color:var(--ink); }
+  header { background:var(--bg); color:#fff; padding:16px 24px; }
+  header h1 { margin:0; font-size:1.4rem; }
+  header p { margin:4px 0 0; opacity:.85; font-size:.9rem; }
+  main { max-width:1100px; margin:0 auto; padding:20px 16px 60px; }
+  section { background:var(--card); border-radius:12px; padding:18px 20px; margin-bottom:20px; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+  h2 { margin-top:0; font-size:1.1rem; color:var(--bg); }
+  .reg-form { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+  .reg-form label { display:flex; flex-direction:column; font-size:.8rem; gap:4px; flex:1; min-width:160px; }
+  input, button { font:inherit; padding:8px 10px; border-radius:8px; border:1px solid #ccc; }
+  button { background:var(--bg); color:#fff; border:none; cursor:pointer; }
+  button:hover { filter:brightness(1.1); }
+  button.secondary { background:#6c757d; }
+  button.danger { background:#dc3545; }
+  button:disabled { background:#adb5bd; cursor:not-allowed; }
+  .teams { list-style:none; padding:0; margin:14px 0 0; display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:8px; }
+  .teams li { background:#f1f8f4; border:1px solid #d5e8dc; border-radius:8px; padding:8px 12px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .teams li button { padding:2px 8px; font-size:.8rem; }
+  .bracket { display:flex; gap:24px; overflow-x:auto; padding-bottom:8px; }
+  .round { min-width:250px; flex:1; display:flex; flex-direction:column; justify-content:space-around; gap:14px; }
+  .round h3 { margin:0 0 4px; font-size:.95rem; color:var(--bg); text-align:center; }
+  .match { border:1px solid #d5e8dc; border-radius:10px; overflow:hidden; background:#fbfdfb; }
+  .side { display:flex; justify-content:space-between; align-items:center; gap:6px; padding:7px 10px; border-bottom:1px solid #eef4f0; }
+  .side:last-of-type { border-bottom:none; }
+  .side.winner { background:#fff8e1; font-weight:700; }
+  .side .name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .bye { color:#adb5bd; font-style:italic; }
+  .result-row { display:flex; gap:6px; padding:8px 10px; background:#f1f8f4; align-items:center; flex-wrap:wrap; }
+  .result-row input[type=number] { width:56px; }
+  .result-row input[type=date] { flex:1; min-width:130px; }
+  .result-row button { padding:6px 10px; font-size:.85rem; }
+  .played-date { font-size:.78rem; color:#6c757d; padding:0 10px 6px; }
+  .champion { background:linear-gradient(90deg,#fff8e1,#ffecb3); border:2px solid var(--accent); border-radius:12px; padding:16px; text-align:center; font-size:1.15rem; font-weight:700; margin-bottom:20px; }
+  .msg { padding:8px 12px; border-radius:8px; margin-top:10px; font-size:.9rem; display:none; }
+  .msg.error { display:block; background:#f8d7da; color:#842029; }
+  .msg.ok { display:block; background:#d1e7dd; color:#0f5132; }
+  .note { font-size:.85rem; color:#6c757d; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🎾 Tenisová liga táta &amp; syn</h1>
+  <p>Registrace dvojic, rozlosování pavouka a zadávání výsledků zápasů.</p>
+</header>
+<main>
+  <div id="championBox"></div>
+
+  <section id="regSection">
+    <h2>Registrace dvojice</h2>
+    <div class="reg-form">
+      <label>Jméno táty <input id="father" placeholder="např. Petr"></label>
+      <label>Jméno syna <input id="son" placeholder="např. Honza"></label>
+      <button onclick="addTeam()">Registrovat</button>
+    </div>
+    <div id="msg" class="msg"></div>
+    <ul id="teamList" class="teams"></ul>
+    <p class="note" id="regNote"></p>
+    <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+      <button id="drawBtn" onclick="draw()">Rozlosovat turnaj</button>
+      <button class="danger" onclick="resetAll()">Vymazat vše a začít znovu</button>
+    </div>
+  </section>
+
+  <section id="bracketSection" style="display:none;">
+    <h2>Pavouk turnaje</h2>
+    <div id="bracket" class="bracket"></div>
+  </section>
+</main>
+
+<script>
+let state = null;
+
+const roundNames = (total) => {
+  if (total === 3) return {1:"Čtvrtfinále", 2:"Semifinále", 3:"Finále"};
+  if (total === 2) return {1:"Semifinále", 2:"Finále"};
+  if (total === 1) return {1:"Finále"};
+  const names = {};
+  for (let r = 1; r <= total; r++) names[r] = "Kolo " + r;
+  return names;
+};
+
+async function api(path, options) {
+  const res = await fetch(path, options);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Chyba serveru");
+  return data;
+}
+
+function showMsg(text, ok) {
+  const el = document.getElementById("msg");
+  el.textContent = text;
+  el.className = "msg " + (ok ? "ok" : "error");
+}
+
+async function refresh() {
+  state = await api("/api/state");
+  render();
+}
+
+async function addTeam() {
+  const father = document.getElementById("father").value;
+  const son = document.getElementById("son").value;
+  try {
+    state = await api("/api/teams", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({father, son})
+    });
+    document.getElementById("father").value = "";
+    document.getElementById("son").value = "";
+    showMsg("Dvojice zaregistrována.", true);
+    render();
+  } catch (e) { showMsg(e.message, false); }
+}
+
+async function removeTeam(id) {
+  try {
+    state = await api("/api/teams/" + id, {method: "DELETE"});
+    showMsg("Tým odebrán.", true);
+    render();
+  } catch (e) { showMsg(e.message, false); }
+}
+
+async function draw() {
+  try {
+    state = await api("/api/draw", {method: "POST", headers: {"Content-Type": "application/json"}, body: "{}"});
+    showMsg("Turnaj rozlosován!", true);
+    render();
+  } catch (e) { showMsg(e.message, false); }
+}
+
+async function saveResult(id) {
+  const s1 = document.getElementById("s1-" + id).value;
+  const s2 = document.getElementById("s2-" + id).value;
+  const played = document.getElementById("d-" + id).value;
+  try {
+    state = await api("/api/match/" + id + "/result", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({score1: s1, score2: s2, played})
+    });
+    showMsg("Výsledek uložen.", true);
+    render();
+  } catch (e) { showMsg(e.message, false); }
+}
+
+async function clearResult(id) {
+  try {
+    state = await api("/api/match/" + id + "/clear", {method: "POST"});
+    showMsg("Výsledek smazán.", true);
+    render();
+  } catch (e) { showMsg(e.message, false); }
+}
+
+async function resetAll() {
+  if (!confirm("Opravdu vymazat všechny týmy, los i výsledky?")) return;
+  state = await api("/api/reset", {method: "POST", headers: {"Content-Type": "application/json"}, body: "{}"});
+  showMsg("Vše vymazáno, můžete začít nový turnaj.", true);
+  render();
+}
+
+function teamName(t) {
+  return t ? t.father + " & " + t.son : "—";
+}
+
+function render() {
+  const list = document.getElementById("teamList");
+  list.innerHTML = "";
+  for (const t of state.teams) {
+    const li = document.createElement("li");
+    const span = document.createElement("span");
+    span.textContent = t.father + " & " + t.son;
+    li.appendChild(span);
+    if (!state.drawn) {
+      const btn = document.createElement("button");
+      btn.className = "danger";
+      btn.textContent = "Odebrat";
+      btn.onclick = () => removeTeam(t.id);
+      li.appendChild(btn);
+    }
+    list.appendChild(li);
+  }
+  document.getElementById("regNote").textContent =
+    "Registrováno týmů: " + state.teams.length + " / " + state.maxTeams +
+    (state.drawn ? " — registrace uzavřena (turnaj rozlosován)." : ".");
+  document.getElementById("drawBtn").disabled = state.drawn || state.teams.length < 2;
+
+  const champBox = document.getElementById("championBox");
+  if (state.champion) {
+    champBox.innerHTML = '<div class="champion">🏆 Vítěz turnaje: ' + state.champion.father + " & " + state.champion.son + "</div>";
+  } else {
+    champBox.innerHTML = "";
+  }
+
+  const bracketSection = document.getElementById("bracketSection");
+  const bracket = document.getElementById("bracket");
+  if (!state.drawn) {
+    bracketSection.style.display = "none";
+    return;
+  }
+  bracketSection.style.display = "block";
+  bracket.innerHTML = "";
+  const maxRound = Math.max(...state.matches.map(m => m.round));
+  const names = roundNames(maxRound);
+  for (let r = 1; r <= maxRound; r++) {
+    const col = document.createElement("div");
+    col.className = "round";
+    const h = document.createElement("h3");
+    h.textContent = names[r] || ("Kolo " + r);
+    col.appendChild(h);
+    for (const m of state.matches.filter(m => m.round === r)) {
+      col.appendChild(renderMatch(m));
+    }
+    bracket.appendChild(col);
+  }
+}
+
+function renderMatch(m) {
+  const div = document.createElement("div");
+  div.className = "match";
+  const sides = [
+    {t: m.team1, s: m.score1},
+    {t: m.team2, s: m.score2}
+  ];
+  sides.forEach((side, idx) => {
+    const row = document.createElement("div");
+    row.className = "side" + (m.winner_id && side.t && side.t.id === m.winner_id ? " winner" : "");
+    const name = document.createElement("span");
+    name.className = "name" + (!side.t ? " bye" : "");
+    name.textContent = teamName(side.t) + (side.t ? "" : " (volno)");
+    name.title = teamName(side.t);
+    const score = document.createElement("strong");
+    score.textContent = (m.score1 !== null && side.t) ? (idx === 0 ? m.score1 : m.score2) : "";
+    row.appendChild(name);
+    row.appendChild(score);
+    div.appendChild(row);
+  });
+  const playable = m.team1 && m.team2;
+  if (playable) {
+    const row = document.createElement("div");
+    row.className = "result-row";
+    row.innerHTML =
+      '<input type="number" min="0" id="s1-' + m.id + '" placeholder="0" value="' + (m.score1 ?? "") + '">' +
+      '<input type="number" min="0" id="s2-' + m.id + '" placeholder="0" value="' + (m.score2 ?? "") + '">' +
+      '<input type="date" id="d-' + m.id + '" value="' + (m.played || "") + '" title="Datum zápasu">' +
+      '<button onclick="saveResult(' + m.id + ')">Uložit</button>' +
+      (m.score1 !== null ? '<button class="secondary" onclick="clearResult(' + m.id + ')">Smazat</button>' : '');
+    div.appendChild(row);
+  }
+  if (m.played) {
+    const d = document.createElement("div");
+    d.className = "played-date";
+    d.textContent = "Hráno: " + m.played;
+    div.appendChild(d);
+  }
+  return div;
+}
+
+refresh();
+</script>
+</body>
+</html>
