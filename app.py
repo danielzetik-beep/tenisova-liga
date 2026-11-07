@@ -1,7 +1,5 @@
 import json
-import math
 import os
-import random
 import sqlite3
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -28,33 +26,92 @@ def init_db():
             "son TEXT NOT NULL, "
             "created_at TEXT DEFAULT CURRENT_TIMESTAMP)"
         )
+        cols = [r["name"] for r in con.execute("PRAGMA table_info(matches)")]
+        if cols and "round" in cols:
+            con.execute("DROP TABLE matches")
         con.execute(
             "CREATE TABLE IF NOT EXISTS matches ("
             "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-            "round INTEGER NOT NULL, "
-            "pos INTEGER NOT NULL, "
-            "score1 INTEGER, "
-            "score2 INTEGER, "
+            "team1_id INTEGER NOT NULL, "
+            "team2_id INTEGER NOT NULL, "
+            "s1a INTEGER, s1b INTEGER, "
+            "s2a INTEGER, s2b INTEGER, "
+            "tb1 INTEGER, tb2 INTEGER, "
             "played TEXT, "
-            "UNIQUE(round, pos))"
+            "UNIQUE(team1_id, team2_id))"
         )
         con.execute("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT)")
 
 
-def next_pow2(n):
-    p = 1
-    while p < n:
-        p *= 2
-    return p
-
-
 def team_dict(con, team_id):
-    if team_id is None:
-        return None
     row = con.execute("SELECT * FROM teams WHERE id = ?", (team_id,)).fetchone()
     if not row:
         return None
     return {"id": row["id"], "father": row["father"], "son": row["son"]}
+
+
+def match_winner(m):
+    if m["s1a"] is None or m["s1b"] is None or m["s2a"] is None or m["s2b"] is None:
+        return None
+    t1_sets = (m["s1a"] > m["s1b"]) + (m["s2a"] > m["s2b"])
+    t2_sets = (m["s1b"] > m["s1a"]) + (m["s2b"] > m["s2a"])
+    if t1_sets != t2_sets:
+        return m["team1_id"] if t1_sets > t2_sets else m["team2_id"]
+    if m["tb1"] is None or m["tb2"] is None:
+        return None
+    return m["team1_id"] if m["tb1"] > m["tb2"] else m["team2_id"]
+
+
+def compute_standings(con, teams, matches):
+    stats = {
+        t["id"]: {
+            "team": t, "played": 0, "wins": 0, "losses": 0,
+            "sets_won": 0, "sets_lost": 0, "games_won": 0, "games_lost": 0,
+        }
+        for t in teams
+    }
+    for m in matches:
+        w = match_winner(m)
+        if w is None:
+            continue
+        loser = m["team2_id"] if w == m["team1_id"] else m["team1_id"]
+        a = stats[w]
+        b = stats[loser]
+        a["played"] += 1
+        b["played"] += 1
+        a["wins"] += 1
+        b["losses"] += 1
+        t1_sets = (m["s1a"] > m["s1b"]) + (m["s2a"] > m["s2b"])
+        t2_sets = (m["s1b"] > m["s1a"]) + (m["s2b"] > m["s2a"])
+        if w == m["team1_id"]:
+            a["sets_won"] += t1_sets
+            a["sets_lost"] += t2_sets
+            b["sets_won"] += t2_sets
+            b["sets_lost"] += t1_sets
+        else:
+            a["sets_won"] += t2_sets
+            a["sets_lost"] += t1_sets
+            b["sets_won"] += t1_sets
+            b["sets_lost"] += t2_sets
+        a["games_won"] += m["s1a"] + m["s2a"]
+        a["games_lost"] += m["s1b"] + m["s2b"]
+        b["games_won"] += m["s1b"] + m["s2b"]
+        b["games_lost"] += m["s1a"] + m["s2a"]
+    rows = []
+    for s in stats.values():
+        rows.append({
+            "team": s["team"],
+            "played": s["played"],
+            "wins": s["wins"],
+            "losses": s["losses"],
+            "sets": f"{s['sets_won']}:{s['sets_lost']}",
+            "sets_diff": s["sets_won"] - s["sets_lost"],
+            "games": f"{s['games_won']}:{s['games_lost']}",
+            "games_diff": s["games_won"] - s["games_lost"],
+            "points": s["wins"] * 2,
+        })
+    rows.sort(key=lambda r: (-r["points"], -r["sets_diff"], -r["games_diff"], r["team"]["father"]))
+    return rows
 
 
 def compute_state(con):
@@ -62,63 +119,22 @@ def compute_state(con):
         {"id": r["id"], "father": r["father"], "son": r["son"]}
         for r in con.execute("SELECT * FROM teams ORDER BY id")
     ]
-    seed_row = con.execute("SELECT value FROM meta WHERE key = 'seeds'").fetchone()
-    drawn = seed_row is not None
+    sched = con.execute("SELECT value FROM meta WHERE key = 'schedule'").fetchone()
+    scheduled = sched is not None
     matches = []
-    champion = None
-    if drawn:
-        order = json.loads(seed_row["value"])
-        n = next_pow2(max(len(order), 2))
-        total_rounds = int(math.log2(n))
-        slots = [None] * n
-        for i, tid in enumerate(order):
-            slots[i] = tid
-        round_teams = {0: slots}
-        result_rows = {
-            (r["round"], r["pos"]): r
-            for r in con.execute("SELECT * FROM matches")
-        }
-        for rnd in range(1, total_rounds + 1):
-            prev = round_teams[rnd - 1]
-            count = len(prev) // 2
-            current = []
-            for pos in range(count):
-                t1 = prev[2 * pos]
-                t2 = prev[2 * pos + 1]
-                row = result_rows.get((rnd, pos))
-                s1 = row["score1"] if row else None
-                s2 = row["score2"] if row else None
-                played = row["played"] if row else None
-                mid = row["id"] if row else None
-                winner = None
-                if t1 is not None and t2 is not None:
-                    if s1 is not None and s2 is not None and s1 != s2:
-                        winner = t1 if s1 > s2 else t2
-                elif t1 is not None:
-                    winner = t1
-                elif t2 is not None:
-                    winner = t2
-                current.append(winner)
-                matches.append({
-                    "id": mid,
-                    "round": rnd,
-                    "pos": pos,
-                    "team1": team_dict(con, t1),
-                    "team2": team_dict(con, t2),
-                    "score1": s1,
-                    "score2": s2,
-                    "played": played,
-                    "winner_id": winner,
-                })
-            round_teams[rnd] = current
-        if total_rounds >= 1 and round_teams[total_rounds]:
-            champion = team_dict(con, round_teams[total_rounds][0])
+    for r in con.execute("SELECT * FROM matches ORDER BY id"):
+        m = dict(r)
+        m["team1"] = team_dict(con, m["team1_id"])
+        m["team2"] = team_dict(con, m["team2_id"])
+        m["winner_id"] = match_winner(m)
+        matches.append(m)
+    standings = compute_standings(con, teams, matches) if scheduled else []
     return {
         "teams": teams,
-        "drawn": drawn,
+        "scheduled": scheduled,
         "maxTeams": MAX_TEAMS,
         "matches": matches,
-        "champion": champion,
+        "standings": standings,
     }
 
 
@@ -166,8 +182,8 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/teams":
             self.add_team(data)
-        elif path == "/api/draw":
-            self.draw()
+        elif path == "/api/schedule":
+            self.create_schedule()
         elif path.startswith("/api/match/") and path.endswith("/result"):
             try:
                 match_id = int(path.split("/")[3])
@@ -196,9 +212,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"error": "Špatné ID týmu"}, 400)
                 return
             with lock, get_db() as con:
-                drawn = con.execute("SELECT value FROM meta WHERE key='seeds'").fetchone()
-                if drawn:
-                    self.send_json({"error": "Po rozlosování už nelze mazat týmy."}, 400)
+                if con.execute("SELECT value FROM meta WHERE key='schedule'").fetchone():
+                    self.send_json({"error": "Zápasy už jsou vytvořené, registrace je uzavřená."}, 400)
                     return
                 con.execute("DELETE FROM teams WHERE id = ?", (team_id,))
                 self.send_json(compute_state(con))
@@ -212,9 +227,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"error": "Vyplňte jméno táty i syna."}, 400)
             return
         with lock, get_db() as con:
-            drawn = con.execute("SELECT value FROM meta WHERE key='seeds'").fetchone()
-            if drawn:
-                self.send_json({"error": "Turnaj už je rozlosovaný, registrace je uzavřená."}, 400)
+            if con.execute("SELECT value FROM meta WHERE key='schedule'").fetchone():
+                self.send_json({"error": "Zápasy už jsou vytvořené, registrace je uzavřená."}, 400)
                 return
             count = con.execute("SELECT COUNT(*) AS c FROM teams").fetchone()["c"]
             if count >= MAX_TEAMS:
@@ -223,43 +237,55 @@ class Handler(BaseHTTPRequestHandler):
             con.execute("INSERT INTO teams (father, son) VALUES (?, ?)", (father, son))
             self.send_json(compute_state(con))
 
-    def draw(self):
+    def create_schedule(self):
         with lock, get_db() as con:
-            if con.execute("SELECT value FROM meta WHERE key='seeds'").fetchone():
-                self.send_json({"error": "Turnaj už je rozlosovaný."}, 400)
+            if con.execute("SELECT value FROM meta WHERE key='schedule'").fetchone():
+                self.send_json({"error": "Zápasy už jsou vytvořené."}, 400)
                 return
             ids = [r["id"] for r in con.execute("SELECT id FROM teams ORDER BY id")]
             if len(ids) < 2:
                 self.send_json({"error": "Potřeba jsou alespoň 2 týmy."}, 400)
                 return
-            random.shuffle(ids)
-            con.execute(
-                "INSERT OR REPLACE INTO meta (key, value) VALUES ('seeds', ?)",
-                (json.dumps(ids),),
-            )
-            n = next_pow2(len(ids))
-            total_rounds = int(math.log2(n))
-            for rnd in range(1, total_rounds + 1):
-                for pos in range(n >> rnd):
+            for i in range(len(ids)):
+                for j in range(i + 1, len(ids)):
                     con.execute(
-                        "INSERT OR IGNORE INTO matches (round, pos) VALUES (?, ?)",
-                        (rnd, pos),
+                        "INSERT OR IGNORE INTO matches (team1_id, team2_id) VALUES (?, ?)",
+                        (ids[i], ids[j]),
                     )
+            con.execute("INSERT OR REPLACE INTO meta (key, value) VALUES ('schedule', '1')")
             self.send_json(compute_state(con))
 
     def set_result(self, match_id, data):
+        def num(key):
+            v = data.get(key)
+            if v is None or v == "":
+                return None
+            return int(v)
+
         try:
-            s1 = int(data.get("score1"))
-            s2 = int(data.get("score2"))
+            s1a, s1b, s2a, s2b = num("s1a"), num("s1b"), num("s2a"), num("s2b")
+            tb1, tb2 = num("tb1"), num("tb2")
         except (TypeError, ValueError):
             self.send_json({"error": "Skóre musí být čísla."}, 400)
             return
-        if s1 < 0 or s2 < 0:
-            self.send_json({"error": "Skóre nesmí být záporné."}, 400)
+        vals = [v for v in (s1a, s1b, s2a, s2b) if v is not None]
+        if len(vals) != 4 or any(v < 0 for v in vals):
+            self.send_json({"error": "Vyplňte oba sety (nezáporná čísla)."}, 400)
             return
-        if s1 == s2:
-            self.send_json({"error": "Remíza není možná, jeden tým musí vyhrát."}, 400)
+        if s1a == s1b or s2a == s2b:
+            self.send_json({"error": "V každém setu musí někdo vyhrát (bez remízy)."}, 400)
             return
+        t1_sets = (s1a > s1b) + (s2a > s2b)
+        t2_sets = (s1b > s1a) + (s2b > s2a)
+        if t1_sets == t2_sets:
+            if tb1 is None or tb2 is None or tb1 < 0 or tb2 < 0:
+                self.send_json({"error": "Při 1:1 na sety je potřeba výsledek tie-breaku."}, 400)
+                return
+            if tb1 == tb2:
+                self.send_json({"error": "V tie-breaku musí někdo vyhrát."}, 400)
+                return
+        else:
+            tb1 = tb2 = None
         played = str(data.get("played", "")).strip() or None
         with lock, get_db() as con:
             row = con.execute("SELECT * FROM matches WHERE id = ?", (match_id,)).fetchone()
@@ -267,8 +293,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"error": "Zápas nenalezen."}, 404)
                 return
             con.execute(
-                "UPDATE matches SET score1 = ?, score2 = ?, played = ? WHERE id = ?",
-                (s1, s2, played, match_id),
+                "UPDATE matches SET s1a=?, s1b=?, s2a=?, s2b=?, tb1=?, tb2=?, played=? WHERE id = ?",
+                (s1a, s1b, s2a, s2b, tb1, tb2, played, match_id),
             )
             self.send_json(compute_state(con))
 
@@ -279,7 +305,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"error": "Zápas nenalezen."}, 404)
                 return
             con.execute(
-                "UPDATE matches SET score1 = NULL, score2 = NULL, played = NULL WHERE id = ?",
+                "UPDATE matches SET s1a=NULL, s1b=NULL, s2a=NULL, s2b=NULL, tb1=NULL, tb2=NULL, played=NULL WHERE id = ?",
                 (match_id,),
             )
             self.send_json(compute_state(con))
