@@ -25,21 +25,19 @@
   .teams { list-style:none; padding:0; margin:14px 0 0; display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:8px; }
   .teams li { background:#f1f8f4; border:1px solid #d5e8dc; border-radius:8px; padding:8px 12px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
   .teams li button { padding:2px 8px; font-size:.8rem; }
-  .bracket { display:flex; gap:24px; overflow-x:auto; padding-bottom:8px; }
-  .round { min-width:250px; flex:1; display:flex; flex-direction:column; justify-content:space-around; gap:14px; }
-  .round h3 { margin:0 0 4px; font-size:.95rem; color:var(--bg); text-align:center; }
-  .match { border:1px solid #d5e8dc; border-radius:10px; overflow:hidden; background:#fbfdfb; }
-  .side { display:flex; justify-content:space-between; align-items:center; gap:6px; padding:7px 10px; border-bottom:1px solid #eef4f0; }
-  .side:last-of-type { border-bottom:none; }
-  .side.winner { background:#fff8e1; font-weight:700; }
-  .side .name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .bye { color:#adb5bd; font-style:italic; }
-  .result-row { display:flex; gap:6px; padding:8px 10px; background:#f1f8f4; align-items:center; flex-wrap:wrap; }
-  .result-row input[type=number] { width:56px; }
-  .result-row input[type=date] { flex:1; min-width:130px; }
-  .result-row button { padding:6px 10px; font-size:.85rem; }
-  .played-date { font-size:.78rem; color:#6c757d; padding:0 10px 6px; }
-  .champion { background:linear-gradient(90deg,#fff8e1,#ffecb3); border:2px solid var(--accent); border-radius:12px; padding:16px; text-align:center; font-size:1.15rem; font-weight:700; margin-bottom:20px; }
+  table { border-collapse:collapse; width:100%; font-size:.92rem; }
+  th, td { padding:8px 10px; text-align:center; border-bottom:1px solid #eef4f0; }
+  th { background:#f1f8f4; color:var(--bg); }
+  td:first-child, th:first-child { text-align:left; }
+  tr.leader td { background:#fff8e1; font-weight:700; }
+  .match { border:1px solid #d5e8dc; border-radius:10px; background:#fbfdfb; padding:10px 12px; margin-bottom:10px; }
+  .match .pair { display:flex; justify-content:space-between; gap:8px; font-weight:600; margin-bottom:8px; flex-wrap:wrap; }
+  .match .pair .winner { color:#b8860b; }
+  .score-line { display:flex; gap:6px; align-items:center; flex-wrap:wrap; font-size:.85rem; margin-top:6px; }
+  .score-line input[type=number] { width:52px; }
+  .score-line input[type=date] { flex:1; min-width:130px; }
+  .score-line .lbl { color:#6c757d; }
+  .played-date { font-size:.78rem; color:#6c757d; margin-top:4px; }
   .msg { padding:8px 12px; border-radius:8px; margin-top:10px; font-size:.9rem; display:none; }
   .msg.error { display:block; background:#f8d7da; color:#842029; }
   .msg.ok { display:block; background:#d1e7dd; color:#0f5132; }
@@ -49,11 +47,9 @@
 <body>
 <header>
   <h1>🎾 Tenisová liga táta &amp; syn</h1>
-  <p>Registrace dvojic, rozlosování pavouka a zadávání výsledků zápasů.</p>
+  <p>Liga každý s každým – registrace dvojic, zadávání výsledků (2 sety + tie-break) a tabulka.</p>
 </header>
 <main>
-  <div id="championBox"></div>
-
   <section id="regSection">
     <h2>Registrace dvojice</h2>
     <div class="reg-form">
@@ -65,28 +61,30 @@
     <ul id="teamList" class="teams"></ul>
     <p class="note" id="regNote"></p>
     <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
-      <button id="drawBtn" onclick="draw()">Rozlosovat turnaj</button>
+      <button id="schedBtn" onclick="createSchedule()">Vytvořit zápasy (každý s každým)</button>
       <button class="danger" onclick="resetAll()">Vymazat vše a začít znovu</button>
     </div>
   </section>
 
-  <section id="bracketSection" style="display:none;">
-    <h2>Pavouk turnaje</h2>
-    <div id="bracket" class="bracket"></div>
+  <section id="tableSection" style="display:none;">
+    <h2>Tabulka</h2>
+    <table id="standings">
+      <thead>
+        <tr><th>Tým</th><th>Zápasy</th><th>Výhry</th><th>Prohry</th><th>Sety</th><th>Gemy</th><th>Body</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <p class="note">Za výhru jsou 2 body. Řazení: body, rozdíl setů, rozdíl gemů.</p>
+  </section>
+
+  <section id="matchesSection" style="display:none;">
+    <h2>Zápasy</h2>
+    <div id="matchList"></div>
   </section>
 </main>
 
 <script>
 let state = null;
-
-const roundNames = (total) => {
-  if (total === 3) return {1:"Čtvrtfinále", 2:"Semifinále", 3:"Finále"};
-  if (total === 2) return {1:"Semifinále", 2:"Finále"};
-  if (total === 1) return {1:"Finále"};
-  const names = {};
-  for (let r = 1; r <= total; r++) names[r] = "Kolo " + r;
-  return names;
-};
 
 async function api(path, options) {
   const res = await fetch(path, options);
@@ -130,23 +128,24 @@ async function removeTeam(id) {
   } catch (e) { showMsg(e.message, false); }
 }
 
-async function draw() {
+async function createSchedule() {
   try {
-    state = await api("/api/draw", {method: "POST", headers: {"Content-Type": "application/json"}, body: "{}"});
-    showMsg("Turnaj rozlosován!", true);
+    state = await api("/api/schedule", {method: "POST", headers: {"Content-Type": "application/json"}, body: "{}"});
+    showMsg("Zápasy vytvořeny – každý hraje s každým!", true);
     render();
   } catch (e) { showMsg(e.message, false); }
 }
 
 async function saveResult(id) {
-  const s1 = document.getElementById("s1-" + id).value;
-  const s2 = document.getElementById("s2-" + id).value;
-  const played = document.getElementById("d-" + id).value;
+  const g = (k) => document.getElementById(k + "-" + id).value;
   try {
     state = await api("/api/match/" + id + "/result", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({score1: s1, score2: s2, played})
+      body: JSON.stringify({
+        s1a: g("s1a"), s1b: g("s1b"), s2a: g("s2a"), s2b: g("s2b"),
+        tb1: g("tb1"), tb2: g("tb2"), played: g("d")
+      })
     });
     showMsg("Výsledek uložen.", true);
     render();
@@ -162,7 +161,7 @@ async function clearResult(id) {
 }
 
 async function resetAll() {
-  if (!confirm("Opravdu vymazat všechny týmy, los i výsledky?")) return;
+  if (!confirm("Opravdu vymazat všechny týmy, zápasy i výsledky?")) return;
   state = await api("/api/reset", {method: "POST", headers: {"Content-Type": "application/json"}, body: "{}"});
   showMsg("Vše vymazáno, můžete začít nový turnaj.", true);
   render();
@@ -170,6 +169,13 @@ async function resetAll() {
 
 function teamName(t) {
   return t ? t.father + " & " + t.son : "—";
+}
+
+function scoreText(m) {
+  if (m.s1a === null) return "";
+  let s = m.s1a + ":" + m.s1b + ", " + m.s2a + ":" + m.s2b;
+  if (m.tb1 !== null) s += " (TB " + m.tb1 + ":" + m.tb2 + ")";
+  return s;
 }
 
 function render() {
@@ -180,7 +186,7 @@ function render() {
     const span = document.createElement("span");
     span.textContent = t.father + " & " + t.son;
     li.appendChild(span);
-    if (!state.drawn) {
+    if (!state.scheduled) {
       const btn = document.createElement("button");
       btn.className = "danger";
       btn.textContent = "Odebrat";
@@ -191,71 +197,64 @@ function render() {
   }
   document.getElementById("regNote").textContent =
     "Registrováno týmů: " + state.teams.length + " / " + state.maxTeams +
-    (state.drawn ? " — registrace uzavřena (turnaj rozlosován)." : ".");
-  document.getElementById("drawBtn").disabled = state.drawn || state.teams.length < 2;
+    (state.scheduled ? " — registrace uzavřena (zápasy vytvořeny)." : (state.teams.length >= state.maxTeams ? " — turnaj je plný." : "."));
+  document.getElementById("schedBtn").disabled = state.scheduled || state.teams.length < 2;
 
-  const champBox = document.getElementById("championBox");
-  if (state.champion) {
-    champBox.innerHTML = '<div class="champion">🏆 Vítěz turnaje: ' + state.champion.father + " & " + state.champion.son + "</div>";
-  } else {
-    champBox.innerHTML = "";
-  }
+  document.getElementById("tableSection").style.display = state.scheduled ? "block" : "none";
+  document.getElementById("matchesSection").style.display = state.scheduled ? "block" : "none";
 
-  const bracketSection = document.getElementById("bracketSection");
-  const bracket = document.getElementById("bracket");
-  if (!state.drawn) {
-    bracketSection.style.display = "none";
-    return;
-  }
-  bracketSection.style.display = "block";
-  bracket.innerHTML = "";
-  const maxRound = Math.max(...state.matches.map(m => m.round));
-  const names = roundNames(maxRound);
-  for (let r = 1; r <= maxRound; r++) {
-    const col = document.createElement("div");
-    col.className = "round";
-    const h = document.createElement("h3");
-    h.textContent = names[r] || ("Kolo " + r);
-    col.appendChild(h);
-    for (const m of state.matches.filter(m => m.round === r)) {
-      col.appendChild(renderMatch(m));
+  if (state.scheduled) {
+    const tbody = document.querySelector("#standings tbody");
+    tbody.innerHTML = "";
+    state.standings.forEach((r, i) => {
+      const tr = document.createElement("tr");
+      if (i === 0 && r.played > 0) tr.className = "leader";
+      tr.innerHTML = "<td>" + teamName(r.team) + "</td><td>" + r.played + "</td><td>" + r.wins +
+        "</td><td>" + r.losses + "</td><td>" + r.sets + "</td><td>" + r.games + "</td><td>" + r.points + "</td>";
+      tbody.appendChild(tr);
+    });
+
+    const ml = document.getElementById("matchList");
+    ml.innerHTML = "";
+    for (const m of state.matches) {
+      ml.appendChild(renderMatch(m));
     }
-    bracket.appendChild(col);
   }
 }
 
 function renderMatch(m) {
   const div = document.createElement("div");
   div.className = "match";
-  const sides = [
-    {t: m.team1, s: m.score1},
-    {t: m.team2, s: m.score2}
-  ];
-  sides.forEach((side, idx) => {
-    const row = document.createElement("div");
-    row.className = "side" + (m.winner_id && side.t && side.t.id === m.winner_id ? " winner" : "");
-    const name = document.createElement("span");
-    name.className = "name" + (!side.t ? " bye" : "");
-    name.textContent = teamName(side.t) + (side.t ? "" : " (volno)");
-    name.title = teamName(side.t);
-    const score = document.createElement("strong");
-    score.textContent = (m.score1 !== null && side.t) ? (idx === 0 ? m.score1 : m.score2) : "";
-    row.appendChild(name);
-    row.appendChild(score);
-    div.appendChild(row);
-  });
-  const playable = m.team1 && m.team2;
-  if (playable) {
-    const row = document.createElement("div");
-    row.className = "result-row";
-    row.innerHTML =
-      '<input type="number" min="0" id="s1-' + m.id + '" placeholder="0" value="' + (m.score1 ?? "") + '">' +
-      '<input type="number" min="0" id="s2-' + m.id + '" placeholder="0" value="' + (m.score2 ?? "") + '">' +
-      '<input type="date" id="d-' + m.id + '" value="' + (m.played || "") + '" title="Datum zápasu">' +
-      '<button onclick="saveResult(' + m.id + ')">Uložit</button>' +
-      (m.score1 !== null ? '<button class="secondary" onclick="clearResult(' + m.id + ')">Smazat</button>' : '');
-    div.appendChild(row);
-  }
+  const w1 = m.winner_id === m.team1.id;
+  const w2 = m.winner_id === m.team2.id;
+  const pair = document.createElement("div");
+  pair.className = "pair";
+  const decided = m.s1a !== null;
+  pair.innerHTML =
+    '<span class="' + (w1 ? "winner" : "") + '">' + teamName(m.team1) + "</span>" +
+    '<span>' + (decided ? scoreText(m) : "—") + "</span>" +
+    '<span class="' + (w2 ? "winner" : "") + '">' + teamName(m.team2) + "</span>";
+  div.appendChild(pair);
+
+  const row = document.createElement("div");
+  row.className = "score-line";
+  row.innerHTML =
+    '<span class="lbl">Set 1:</span>' +
+    '<input type="number" min="0" id="s1a-' + m.id + '" value="' + (m.s1a ?? "") + '">' +
+    '<span>:</span>' +
+    '<input type="number" min="0" id="s1b-' + m.id + '" value="' + (m.s1b ?? "") + '">' +
+    '<span class="lbl">Set 2:</span>' +
+    '<input type="number" min="0" id="s2a-' + m.id + '" value="' + (m.s2a ?? "") + '">' +
+    '<span>:</span>' +
+    '<input type="number" min="0" id="s2b-' + m.id + '" value="' + (m.s2b ?? "") + '">' +
+    '<span class="lbl">TB (při 1:1):</span>' +
+    '<input type="number" min="0" id="tb1-' + m.id + '" value="' + (m.tb1 ?? "") + '">' +
+    '<span>:</span>' +
+    '<input type="number" min="0" id="tb2-' + m.id + '" value="' + (m.tb2 ?? "") + '">' +
+    '<input type="date" id="d-' + m.id + '" value="' + (m.played || "") + '" title="Datum zápasu">' +
+    '<button onclick="saveResult(' + m.id + ')">Uložit</button>' +
+    (decided ? '<button class="secondary" onclick="clearResult(' + m.id + ')">Smazat</button>' : '');
+  div.appendChild(row);
   if (m.played) {
     const d = document.createElement("div");
     d.className = "played-date";
