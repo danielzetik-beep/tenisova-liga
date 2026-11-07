@@ -88,6 +88,12 @@
   .msg.ok { display:block; background:#eaf7e0; color:#2e6b1f; border:1px solid #cdeab8; }
   .note { font-size:.85rem; color:var(--muted); }
   .admin-row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:16px; }
+  #infoText ol { margin:0; padding-left:22px; line-height:1.7; }
+  #infoText .status {
+    display:inline-block; margin-top:10px; padding:8px 14px; border-radius:10px;
+    background:#eefbe0; border:1px solid #cdeab8; color:#2e6b1f; font-weight:700;
+  }
+  #infoText .status.full { background:#fdecea; border-color:#f5c6c0; color:#a02c21; }
   #adminToggle { background:transparent; color:var(--muted); border:1px solid var(--line); font-weight:600; }
   #adminToggle:hover { color:var(--bg); }
   #adminControls { display:none; gap:10px; flex-wrap:wrap; align-items:center; }
@@ -100,6 +106,11 @@
   <p>Liga každý s každým · registrace dvojic · výsledky 2 sety + tie-break · tabulka</p>
 </header>
 <main>
+  <section class="card" id="infoBox">
+    <h2>Jak to funguje</h2>
+    <div id="infoText"></div>
+  </section>
+
   <section class="card" id="regSection">
     <h2>Registrace dvojice</h2>
     <form class="reg-form" onsubmit="event.preventDefault(); addTeam();">
@@ -274,6 +285,23 @@ function scoreText(m) {
 }
 
 function render() {
+  const info = document.getElementById("infoText");
+  const free = state.maxTeams - state.teams.length;
+  let statusHtml;
+  if (state.scheduled) {
+    statusHtml = '<span class="status">✅ Zápasy jsou vytvořené – najdete je níže v sekci Zápasy, tabulka se počítá automaticky.</span>';
+  } else if (free > 0) {
+    statusHtml = '<span class="status">📝 Registrace otevřená – zbývá ' + free + (free === 1 ? " místo" : " místa") + " (celkem " + state.maxTeams + " týmů).</span>";
+  } else {
+    statusHtml = '<span class="status full">🚫 Turnaj je plný (' + state.maxTeams + ' týmů). Čeká se na vytvoření zápasů správcem.</span>';
+  }
+  info.innerHTML =
+    "<ol>" +
+    "<li>Zaregistrujte svoji dvojici (táta + syn) ve formuláři níže – stačí vyplnit obě jména a kliknout na Registrovat (nebo stisknout Enter).</li>" +
+    "<li>Až bude všech " + state.maxTeams + " týmů, správce turnaje vytvoří zápasy – každý tým hraje s každým.</li>" +
+    "<li>Po každém zápase zapište výsledek do sekce Zápasy: 2 sety, případně tie-break při 1:1 na sety, a datum. Tabulka se aktualizuje sama.</li>" +
+    "</ol>" + statusHtml;
+
   const list = document.getElementById("teamList");
   list.innerHTML = "";
   for (const t of state.teams) {
