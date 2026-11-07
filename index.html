@@ -8,7 +8,7 @@
   :root { --bg:#0f5132; --card:#ffffff; --accent:#ffc107; --ink:#212529; }
   * { box-sizing: border-box; }
   body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background:#e8f5ec; color:var(--ink); }
-  header { background:var(--bg); color:#fff; padding:16px 24px; }
+  header { background:var(--bg); color:#fff; padding:16px 24px; text-align:center; }
   header h1 { margin:0; font-size:1.4rem; }
   header p { margin:4px 0 0; opacity:.85; font-size:.9rem; }
   main { max-width:1100px; margin:0 auto; padding:20px 16px 60px; }
@@ -60,9 +60,18 @@
     <div id="msg" class="msg"></div>
     <ul id="teamList" class="teams"></ul>
     <p class="note" id="regNote"></p>
-    <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
-      <button id="schedBtn" onclick="createSchedule()">Vytvořit zápasy (každý s každým)</button>
-      <button class="danger" onclick="resetAll()">Vymazat vše a začít znovu</button>
+    <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <button id="adminToggle" class="secondary" onclick="toggleAdmin()">🔒 Admin</button>
+      <span id="adminControls" style="display:none; gap:10px; flex-wrap:wrap; align-items:center;">
+        <button id="schedBtn" onclick="createSchedule()">Vytvořit zápasy (každý s každým)</button>
+        <button class="danger" onclick="resetAll()">Vymazat vše a začít znovu</button>
+      </span>
+    </div>
+    <div id="adminPanel" style="display:none; margin-top:10px;">
+      <div class="reg-form">
+        <label>Admin PIN <input id="pin" type="password" placeholder="PIN"></label>
+        <button onclick="unlockAdmin()">Odemknout</button>
+      </div>
     </div>
   </section>
 
@@ -85,6 +94,7 @@
 
 <script>
 let state = null;
+let adminUnlocked = false;
 
 async function api(path, options) {
   const res = await fetch(path, options);
@@ -120,9 +130,34 @@ async function addTeam() {
   } catch (e) { showMsg(e.message, false); }
 }
 
+function toggleAdmin() {
+  const p = document.getElementById("adminPanel");
+  p.style.display = p.style.display === "none" ? "block" : "none";
+}
+
+async function unlockAdmin() {
+  const pin = document.getElementById("pin").value;
+  try {
+    await api("/api/admin", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({pin})
+    });
+    adminUnlocked = true;
+    window.__pin = pin;
+    document.getElementById("pin").value = "";
+    showMsg("Admin odemčen.", true);
+    render();
+  } catch (e) { showMsg(e.message, false); }
+}
+
 async function removeTeam(id) {
   try {
-    state = await api("/api/teams/" + id, {method: "DELETE"});
+    state = await api("/api/teams/" + id + "/delete", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({pin: document.getElementById("pin").value || window.__pin || ""})
+    });
     showMsg("Tým odebrán.", true);
     render();
   } catch (e) { showMsg(e.message, false); }
@@ -130,7 +165,11 @@ async function removeTeam(id) {
 
 async function createSchedule() {
   try {
-    state = await api("/api/schedule", {method: "POST", headers: {"Content-Type": "application/json"}, body: "{}"});
+    state = await api("/api/schedule", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({pin: window.__pin || ""})
+    });
     showMsg("Zápasy vytvořeny – každý hraje s každým!", true);
     render();
   } catch (e) { showMsg(e.message, false); }
@@ -162,9 +201,15 @@ async function clearResult(id) {
 
 async function resetAll() {
   if (!confirm("Opravdu vymazat všechny týmy, zápasy i výsledky?")) return;
-  state = await api("/api/reset", {method: "POST", headers: {"Content-Type": "application/json"}, body: "{}"});
-  showMsg("Vše vymazáno, můžete začít nový turnaj.", true);
-  render();
+  try {
+    state = await api("/api/reset", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({pin: window.__pin || ""})
+    });
+    showMsg("Vše vymazáno, můžete začít nový turnaj.", true);
+    render();
+  } catch (e) { showMsg(e.message, false); }
 }
 
 function teamName(t) {
@@ -186,7 +231,7 @@ function render() {
     const span = document.createElement("span");
     span.textContent = t.father + " & " + t.son;
     li.appendChild(span);
-    if (!state.scheduled) {
+    if (!state.scheduled && adminUnlocked) {
       const btn = document.createElement("button");
       btn.className = "danger";
       btn.textContent = "Odebrat";
@@ -195,6 +240,7 @@ function render() {
     }
     list.appendChild(li);
   }
+  document.getElementById("adminControls").style.display = adminUnlocked ? "inline-flex" : "none";
   document.getElementById("regNote").textContent =
     "Registrováno týmů: " + state.teams.length + " / " + state.maxTeams +
     (state.scheduled ? " — registrace uzavřena (zápasy vytvořeny)." : (state.teams.length >= state.maxTeams ? " — turnaj je plný." : "."));
