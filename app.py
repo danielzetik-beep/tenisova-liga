@@ -7,7 +7,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 BASE = os.path.dirname(os.path.abspath(__file__))
 DB = os.path.join(BASE, "liga.db")
 MAX_TEAMS = 8
-ADMIN_PIN = os.environ.get("ADMIN_PIN", "tenis")
+ADMIN_PIN = os.environ.get("ADMIN_PIN", "TenisJahodnice")
 
 lock = threading.Lock()
 
