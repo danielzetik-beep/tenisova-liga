@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tenisová liga: táta, syn</title>
+<title>Veteráni &amp; Budoucnost: Pražská deblová liga</title>
 <style>
   :root {
     --bg:#0b3d2e; --bg2:#062a1f; --accent:#d8f34a; --accent2:#ffd60a;
@@ -102,8 +102,8 @@
 <body>
 <header>
   <span class="ball">🎾</span>
-  <h1>Tenisová liga: táta, syn</h1>
-  <p>Liga každý s každým · registrace dvojic · výsledky 2 sety + tie-break · tabulka</p>
+  <h1>Veteráni &amp; Budoucnost</h1>
+  <p>Pražská deblová liga · rodič + dítě · každý s každým · výsledky 2 sety + tie-break · tabulka</p>
 </header>
 <main>
   <section class="card" id="infoBox">
@@ -112,10 +112,10 @@
   </section>
 
   <section class="card" id="regSection">
-    <h2>Registrace dvojice</h2>
+    <h2>Registrace páru (rodič + dítě)</h2>
     <form class="reg-form" onsubmit="event.preventDefault(); addTeam();">
-      <label>Jméno táty <input id="father" placeholder="např. Petr" required></label>
-      <label>Jméno syna <input id="son" placeholder="např. Honza" required></label>
+      <label>Jméno rodiče <input id="father" placeholder="např. Petr" required></label>
+      <label>Jméno dítěte <input id="son" placeholder="např. Honza" required></label>
       <button type="submit">Registrovat ⏎</button>
     </form>
     <div id="msg" class="msg"></div>
@@ -186,7 +186,7 @@ async function addTeam() {
     });
     document.getElementById("father").value = "";
     document.getElementById("son").value = "";
-    showMsg("Dvojice zaregistrována.", true);
+    showMsg("Pár zaregistrován.", true);
     render();
   } catch (e) { showMsg(e.message, false); }
 }
@@ -301,7 +301,7 @@ function render() {
   }
   info.innerHTML =
     "<ol>" +
-    "<li>Zaregistrujte svoji dvojici (táta + syn) ve formuláři níže – stačí vyplnit obě jména a kliknout na Registrovat (nebo stisknout Enter).</li>" +
+    "<li>Zaregistrujte svůj pár (rodič + dítě) ve formuláři níže – stačí vyplnit obě jména a kliknout na Registrovat (nebo stisknout Enter).</li>" +
     "<li>Až bude všech " + state.maxTeams + " týmů, správce turnaje vytvoří zápasy – každý tým hraje s každým.</li>" +
     "<li>Po každém zápase zapište výsledek do sekce Zápasy: 2 sety, případně tie-break při 1:1 na sety, a datum. Tabulka se následně aktualizuje sama.</li>" +
     "</ol>" + statusHtml;
