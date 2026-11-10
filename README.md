@@ -9,9 +9,9 @@ Jednoduchá webová aplikace pro amatérskou tenisovou ligu párů rodič + dít
 - Zadávání výsledku: 2 sety (gemy) + při stavu 1:1 na sety výsledek tie-breaku, plus datum zápasu
 - Tabulka: pořadí podle bodů (2 za výhru), pak rozdíl setů a rozdíl gemů
 - Výsledek lze upravit nebo smazat
-- Admin sekce chráněná PINem (tlačítko 🔒 Admin): vytvoření zápasů, odebrání týmu a „vymazat vše“ vidí jen správce. Výchozí PIN je `TenisJahodnice`, změnit ho lze proměnnou prostředí `ADMIN_PIN` (lokálně např. `set ADMIN_PIN=mojeheslo` před `python app.py` na Windows; na PythonAnywhere přidejte řádek `os.environ["ADMIN_PIN"] = "vaseheslo"` do `wsgi.py`)
+- Admin sekce chráněná PINem (tlačítko 🔒 Admin): vytvoření zápasů, odebrání týmu a „vymazat vše“ vidí jen správce. Výchozí PIN je `TenisJahodnice`, změnit ho lze proměnnou prostředí `ADMIN_PIN` (např. `set ADMIN_PIN=mojeheslo` před `python app.py` na Windows)
 
-## Spuštění lokálně
+## Spuštění
 
 Potřeba je jen Python 3 (nic se neinstaluje):
 
@@ -34,7 +34,7 @@ Doporučeno: **PythonAnywhere** (zdarma, běží pořád, data `liga.db` jsou tr
 1. Založte si free účet na pythonanywhere.com.
 2. V konzoli **Bash** na PythonAnywhere stáhněte projekt: `git clone https://github.com/danielzetik-beep/tenisova-liga.git`
 3. Jděte na záložku **Web** → **Add a new web app** → zvolte **Manual configuration** a verzi Pythonu 3.x.
-4. U „Source code" zadejte cestu `/home/<vas-ucet>/tenisova-liga` a u „WSGI configuration file" cestu `/home/<vas-ucet>/tenisova-liga/wsgi.py` (nebo do výchozího WSGI souboru vložte obsah našeho `wsgi.py`).
+4. U „Source code" zadejte cestu `/home/<vas-ucet>/tenisova-liga` a u „WSGI configuration file" cestu `/home/<vas-ucet>/tenisova-liga/wsgi.py`.
 5. Klikněte na **Reload** – stránka poběží na `https://<vas-ucet>.pythonanywhere.com`.
 6. Volitelně změňte admin PIN: v souboru `wsgi.py` nahoře přidejte řádek `os.environ["ADMIN_PIN"] = "vaseheslo"` před `from app import ...`.
 

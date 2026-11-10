@@ -22,7 +22,8 @@ def application(environ, start_response):
         try:
             data = json.loads(raw.decode("utf-8")) if raw else {}
         except Exception:
-            body = json.dumps({"error": "Špatný požadavek"}, ensure_ascii=False).encode("utf-8")
+            status, payload, ct = 400, {"error": "Špatný požadavek"}, None
+            body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
             start_response("400 Bad Request", [
                 ("Content-Type", "application/json; charset=utf-8"),
                 ("Content-Length", str(len(body))),
