@@ -100,6 +100,20 @@
   footer {
     text-align:center; color:var(--muted); font-size:.85rem; padding:10px 16px 30px;
   }
+  .partner {
+    display:inline-flex; align-items:center; gap:8px; margin-top:10px;
+    background:#fff; border:1px solid var(--line); border-radius:999px;
+    padding:6px 14px; font-weight:700; color:var(--bg); font-size:.85rem;
+    box-shadow:0 1px 4px rgba(11,61,46,.08);
+  }
+  .partner .logo {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:26px; height:26px; border-radius:50%;
+    background:linear-gradient(135deg, var(--bg2), var(--bg));
+    color:var(--accent); font-size:14px;
+  }
+  a.partner { text-decoration:none; }
+  a.partner:hover { filter:brightness(1.05); box-shadow:0 2px 8px rgba(11,61,46,.15); }
 </style>
 </head>
 <body>
@@ -166,7 +180,8 @@
   </section>
 </main>
 <footer>
-  <div>Kontakt / reklamace 🙂: Dan Zetik · 608 917 416 · diderko@seznam.cz</div>
+  <a class="partner" href="https://tshradecka.cz/" target="_blank" rel="noopener"><span class="logo">🎾</span> V partnerství s Tenisovou školou Lucie Hradecké</a>
+  <div style="margin-top:10px;">Kontakt / reklamace 🙂: Dan Zetik · 608 917 416 · diderko@seznam.cz</div>
   <div style="margin-top:6px; opacity:.8;">Made with Mistral AI 🤖</div>
 </footer>
 
