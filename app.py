@@ -6,7 +6,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 DB = os.path.join(BASE, "liga.db")
-MAX_TEAMS = 8
+MAX_TEAMS = 9
 ADMIN_PIN = os.environ.get("ADMIN_PIN", "TenisJahodnice")
 
 lock = threading.Lock()
@@ -149,12 +149,18 @@ def add_team(data):
     if not father or not son:
         return 400, {"error": "Vyplňte jméno táty i syna."}
     with lock, get_db() as con:
-        if con.execute("SELECT value FROM meta WHERE key='schedule'").fetchone():
-            return 400, {"error": "Zápasy už jsou vytvořené, registrace je uzavřená."}
         count = con.execute("SELECT COUNT(*) AS c FROM teams").fetchone()["c"]
         if count >= MAX_TEAMS:
             return 400, {"error": f"Turnaj je plný ({MAX_TEAMS} týmů)."}
-        con.execute("INSERT INTO teams (father, son) VALUES (?, ?)", (father, son))
+        cur = con.execute("INSERT INTO teams (father, son) VALUES (?, ?)", (father, son))
+        new_id = cur.lastrowid
+        if con.execute("SELECT value FROM meta WHERE key='schedule'").fetchone():
+            for r in con.execute("SELECT id FROM teams WHERE id != ?", (new_id,)):
+                a, b = (new_id, r["id"]) if new_id < r["id"] else (r["id"], new_id)
+                con.execute(
+                    "INSERT OR IGNORE INTO matches (team1_id, team2_id) VALUES (?, ?)",
+                    (a, b),
+                )
         return 200, compute_state(con)
 
 

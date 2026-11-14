@@ -354,7 +354,7 @@ function render() {
     "</ol>" + statusHtml;
   document.getElementById("regNote").textContent =
     "Registrováno týmů: " + state.teams.length + " / " + state.maxTeams +
-    (state.scheduled ? " — registrace uzavřena (zápasy vytvořeny)." : (state.teams.length >= state.maxTeams ? " — turnaj je plný." : "."));
+    (state.scheduled ? " — zápasy vytvořeny; nově přihlášený pár automaticky dostane zápasy se všemi ostatními." : (state.teams.length >= state.maxTeams ? " — turnaj je plný." : "."));
   document.getElementById("schedBtn").disabled = state.scheduled || state.teams.length < 2;
 
   document.getElementById("tableSection").style.display = state.scheduled ? "block" : "none";
