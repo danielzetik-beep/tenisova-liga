@@ -89,15 +89,19 @@ def compute_standings(con, teams, matches):
             a["sets_lost"] += t2_sets
             b["sets_won"] += t2_sets
             b["sets_lost"] += t1_sets
+            a["games_won"] += m["s1a"] + m["s2a"]
+            a["games_lost"] += m["s1b"] + m["s2b"]
+            b["games_won"] += m["s1b"] + m["s2b"]
+            b["games_lost"] += m["s1a"] + m["s2a"]
         else:
             a["sets_won"] += t2_sets
             a["sets_lost"] += t1_sets
             b["sets_won"] += t1_sets
             b["sets_lost"] += t2_sets
-        a["games_won"] += m["s1a"] + m["s2a"]
-        a["games_lost"] += m["s1b"] + m["s2b"]
-        b["games_won"] += m["s1b"] + m["s2b"]
-        b["games_lost"] += m["s1a"] + m["s2a"]
+            a["games_won"] += m["s1b"] + m["s2b"]
+            a["games_lost"] += m["s1a"] + m["s2a"]
+            b["games_won"] += m["s1a"] + m["s2a"]
+            b["games_lost"] += m["s1b"] + m["s2b"]
     rows = []
     for s in stats.values():
         rows.append({
