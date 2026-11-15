@@ -419,8 +419,8 @@ function renderMatch(m) {
     '<span>:</span>' +
     '<input type="number" min="0" id="tb2-' + m.id + '" value="' + (m.tb2 ?? "") + '">' +
     '<input type="date" id="d-' + m.id + '" value="' + (m.played || "") + '" title="Datum zápasu">' +
-    '<button onclick="saveResult(' + m.id + ')">Uložit</button>' +
-    (m.s1a !== null ? '<button class="secondary" onclick="clearResult(' + m.id + ')">Smazat</button>' : '');
+    '<button onclick="saveResult(' + m.id + ')">' + (m.s1a !== null ? "Editovat ✏️" : "Uložit") + "</button>" +
+    (m.s1a !== null ? '<button class="secondary" onclick="clearResult(' + m.id + ')">Smazat</button>' : "");
   div.appendChild(row);
   if (m.played) {
     const d = document.createElement("div");
