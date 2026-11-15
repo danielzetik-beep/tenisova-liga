@@ -288,6 +288,7 @@ async function saveResult(id) {
       })
     });
     showMsg("Výsledek uložen.", true);
+    if (window.__editMode) window.__editMode.delete(id);
     render();
   } catch (e) { showMsg(e.message, false); }
 }
@@ -296,6 +297,7 @@ async function clearResult(id) {
   try {
     state = await api("/api/match/" + id + "/clear", {method: "POST"});
     showMsg("Výsledek smazán.", true);
+    if (window.__editMode) window.__editMode.delete(id);
     render();
   } catch (e) { showMsg(e.message, false); }
 }
@@ -311,6 +313,12 @@ async function resetAll() {
     showMsg("Vše vymazáno, můžete začít nový turnaj.", true);
     render();
   } catch (e) { showMsg(e.message, false); }
+}
+
+function startEdit(id) {
+  if (!window.__editMode) window.__editMode = new Set();
+  window.__editMode.add(id);
+  render();
 }
 
 function teamName(t) {
@@ -391,8 +399,13 @@ function render() {
 }
 
 function renderMatch(m) {
+  if (!window.__editMode) window.__editMode = new Set();
+  const decided = m.s1a !== null;
+  const editing = decided && window.__editMode.has(m.id);
+  const readonly = decided && !editing;
+  const dis = readonly ? ' disabled' : '';
   const div = document.createElement("div");
-  div.className = "match" + (m.s1a !== null ? " decided" : "");
+  div.className = "match" + (decided ? " decided" : "");
   const w1 = m.winner_id === m.team1.id;
   const w2 = m.winner_id === m.team2.id;
   const pair = document.createElement("div");
@@ -405,22 +418,25 @@ function renderMatch(m) {
 
   const row = document.createElement("div");
   row.className = "score-line";
+  const btn = (!decided || editing)
+    ? '<button onclick="saveResult(' + m.id + ')">Uložit</button>'
+    : '<button onclick="startEdit(' + m.id + ')">Editovat ✏️</button>';
   row.innerHTML =
     '<span class="lbl">Set 1</span>' +
-    '<input type="number" min="0" id="s1a-' + m.id + '" value="' + (m.s1a ?? "") + '">' +
+    '<input type="number" min="0" id="s1a-' + m.id + '" value="' + (m.s1a ?? "") + '"' + dis + '>' +
     '<span>:</span>' +
-    '<input type="number" min="0" id="s1b-' + m.id + '" value="' + (m.s1b ?? "") + '">' +
+    '<input type="number" min="0" id="s1b-' + m.id + '" value="' + (m.s1b ?? "") + '"' + dis + '>' +
     '<span class="lbl">Set 2</span>' +
-    '<input type="number" min="0" id="s2a-' + m.id + '" value="' + (m.s2a ?? "") + '">' +
+    '<input type="number" min="0" id="s2a-' + m.id + '" value="' + (m.s2a ?? "") + '"' + dis + '>' +
     '<span>:</span>' +
-    '<input type="number" min="0" id="s2b-' + m.id + '" value="' + (m.s2b ?? "") + '">' +
+    '<input type="number" min="0" id="s2b-' + m.id + '" value="' + (m.s2b ?? "") + '"' + dis + '>' +
     '<span class="lbl">TB 1:1</span>' +
-    '<input type="number" min="0" id="tb1-' + m.id + '" value="' + (m.tb1 ?? "") + '">' +
+    '<input type="number" min="0" id="tb1-' + m.id + '" value="' + (m.tb1 ?? "") + '"' + dis + '>' +
     '<span>:</span>' +
-    '<input type="number" min="0" id="tb2-' + m.id + '" value="' + (m.tb2 ?? "") + '">' +
-    '<input type="date" id="d-' + m.id + '" value="' + (m.played || "") + '" title="Datum zápasu">' +
-    '<button onclick="saveResult(' + m.id + ')">' + (m.s1a !== null ? "Editovat ✏️" : "Uložit") + "</button>" +
-    (m.s1a !== null ? '<button class="secondary" onclick="clearResult(' + m.id + ')">Smazat</button>' : "");
+    '<input type="number" min="0" id="tb2-' + m.id + '" value="' + (m.tb2 ?? "") + '"' + dis + '>' +
+    '<input type="date" id="d-' + m.id + '" value="' + (m.played || "") + '" title="Datum zápasu"' + dis + '>' +
+    btn +
+    (editing ? '<button class="secondary" onclick="clearResult(' + m.id + ')">Smazat</button>' : "");
   div.appendChild(row);
   if (m.played) {
     const d = document.createElement("div");
