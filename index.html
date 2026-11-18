@@ -111,6 +111,13 @@
   }
   a.partner { text-decoration:none; }
   a.partner:hover { filter:brightness(1.05); box-shadow:0 2px 8px rgba(11,61,46,.15); }
+  #contactList .score-line a {
+    color:var(--bg); font-weight:700; text-decoration:none; padding:7px 10px;
+    border:1px solid var(--line); border-radius:8px; background:#fff; font-size:.82rem;
+  }
+  #contactList .score-line a:hover { background:var(--win); }
+  #contactList a.wabtn { background:#25d366; border-color:#1eb85a; color:#fff; }
+  #contactList a.wabtn:hover { filter:brightness(1.08); }
 </style>
 </head>
 <body>
@@ -151,6 +158,9 @@
     <form class="reg-form" onsubmit="event.preventDefault(); addTeam();">
       <label>Jméno rodiče <input id="father" placeholder="např. Petr" required></label>
       <label>Jméno dítěte <input id="son" placeholder="např. Honza" required></label>
+      <label>Kontakt – jméno <input id="contact" placeholder="volitelné"></label>
+      <label>Telefon <input id="phone" placeholder="volitelné, např. 608 917 416"></label>
+      <label>E-mail <input id="email" type="email" placeholder="volitelné"></label>
       <button type="submit">Registrovat ⏎</button>
     </form>
     <div id="msg" class="msg"></div>
@@ -167,6 +177,21 @@
       <form class="reg-form" onsubmit="event.preventDefault(); unlockAdmin();">
         <label>Admin PIN <input id="pin" type="password" placeholder="PIN" required></label>
         <button type="submit">Odemknout ⏎</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="card" id="contactsSection">
+    <h2>Kontakty účastníků 📞</h2>
+    <p class="note">Kontakty jsou viditelné jen účastníkům ligy. Kliknutím na WhatsApp otevřete chat přímo s daným rodičem – nemusíte psát do společné skupiny.</p>
+    <div id="contactList" class="matches"></div>
+    <div id="contactEditBox" style="display:none; margin-top:14px;">
+      <form class="reg-form" onsubmit="event.preventDefault(); saveContact();">
+        <label>Kontakt – jméno <input id="ceName"></label>
+        <label>Telefon <input id="cePhone" placeholder="např. 608 917 416"></label>
+        <label>E-mail <input id="ceEmail" type="email"></label>
+        <button type="submit">Uložit kontakt</button>
+        <button type="button" class="secondary" onclick="hideContactEdit()">Zrušit</button>
       </form>
     </div>
   </section>
@@ -222,10 +247,13 @@ async function addTeam() {
     state = await api("/api/teams", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({father, son})
+      body: JSON.stringify({father, son, contact: document.getElementById("contact").value, phone: document.getElementById("phone").value, email: document.getElementById("email").value})
     });
     document.getElementById("father").value = "";
     document.getElementById("son").value = "";
+    document.getElementById("contact").value = "";
+    document.getElementById("phone").value = "";
+    document.getElementById("email").value = "";
     showMsg("Dvojice zaregistrována.", true);
     render();
   } catch (e) { showMsg(e.message, false); }
@@ -315,6 +343,45 @@ async function resetAll() {
   } catch (e) { showMsg(e.message, false); }
 }
 
+function waLink(phone) {
+  let d = String(phone).replace(/\D/g, "");
+  if (d.startsWith("420")) return "https://wa.me/" + d;
+  if (d.startsWith("0")) return "https://wa.me/420" + d.slice(1);
+  return "https://wa.me/420" + d;
+}
+
+let __editContactId = null;
+function startContactEdit(id) {
+  const t = state.teams.find(x => x.id === id);
+  if (!t) return;
+  __editContactId = id;
+  document.getElementById("ceName").value = t.contact || "";
+  document.getElementById("cePhone").value = t.phone || "";
+  document.getElementById("ceEmail").value = t.email || "";
+  document.getElementById("contactEditBox").style.display = "block";
+}
+function hideContactEdit() {
+  __editContactId = null;
+  document.getElementById("contactEditBox").style.display = "none";
+}
+async function saveContact() {
+  if (!__editContactId) return;
+  try {
+    state = await api("/api/teams/" + __editContactId + "/contact", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        contact: document.getElementById("ceName").value,
+        phone: document.getElementById("cePhone").value,
+        email: document.getElementById("ceEmail").value
+      })
+    });
+    showMsg("Kontakt uložen.", true);
+    hideContactEdit();
+    render();
+  } catch (e) { showMsg(e.message, false); }
+}
+
 function startEdit(id) {
   if (!window.__editMode) window.__editMode = new Set();
   window.__editMode.add(id);
@@ -349,6 +416,25 @@ function render() {
     }
     list.appendChild(li);
   }
+  const cl = document.getElementById("contactList");
+  cl.innerHTML = "";
+  for (const t of state.teams) {
+    const card = document.createElement("div");
+    card.className = "match";
+    let html = '<div class="pair"><span>' + teamName(t) + '</span><span class="mid">' + (t.contact || t.father) + "</span></div>";
+    html += '<div class="score-line">';
+    if (t.phone) {
+      html += '<a class="wabtn" href="' + waLink(t.phone) + '" target="_blank" rel="noopener">🟢 WhatsApp</a>';
+      html += '<a href="tel:' + t.phone + '">📱 ' + t.phone + "</a>";
+    }
+    if (t.email) html += '<a href="mailto:' + t.email + '">✉️ ' + t.email + "</a>";
+    if (!t.phone && !t.email) html += '<span class="note">Kontakt zatím neuveden</span>';
+    html += '<button class="secondary" onclick="startContactEdit(' + t.id + ')">✏️ ' + (t.phone || t.email ? "Upravit kontakt" : "Přidat kontakt") + "</button>";
+    html += "</div>";
+    card.innerHTML = html;
+    cl.appendChild(card);
+  }
+
   document.getElementById("adminControls").style.display = adminUnlocked ? "inline-flex" : "none";
 
   const info = document.getElementById("infoText");

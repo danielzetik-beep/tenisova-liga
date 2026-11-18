@@ -27,6 +27,10 @@ def init_db():
             "son TEXT NOT NULL, "
             "created_at TEXT DEFAULT CURRENT_TIMESTAMP)"
         )
+        tcols = [r["name"] for r in con.execute("PRAGMA table_info(teams)")]
+        for cname, ctype in (("contact", "TEXT"), ("phone", "TEXT"), ("email", "TEXT")):
+            if cname not in tcols:
+                con.execute(f"ALTER TABLE teams ADD COLUMN {cname} {ctype}")
         cols = [r["name"] for r in con.execute("PRAGMA table_info(matches)")]
         if cols and "round" in cols:
             con.execute("DROP TABLE matches")
@@ -48,7 +52,11 @@ def team_dict(con, team_id):
     row = con.execute("SELECT * FROM teams WHERE id = ?", (team_id,)).fetchone()
     if not row:
         return None
-    return {"id": row["id"], "father": row["father"], "son": row["son"]}
+    keys = row.keys()
+    return {"id": row["id"], "father": row["father"], "son": row["son"],
+            "contact": row["contact"] if "contact" in keys else None,
+            "phone": row["phone"] if "phone" in keys else None,
+            "email": row["email"] if "email" in keys else None}
 
 
 def match_winner(m):
@@ -121,8 +129,8 @@ def compute_standings(con, teams, matches):
 
 def compute_state(con):
     teams = [
-        {"id": r["id"], "father": r["father"], "son": r["son"]}
-        for r in con.execute("SELECT * FROM teams ORDER BY id")
+        team_dict(con, r["id"])
+        for r in con.execute("SELECT id FROM teams ORDER BY id")
     ]
     sched = con.execute("SELECT value FROM meta WHERE key = 'schedule'").fetchone()
     scheduled = sched is not None
@@ -156,7 +164,13 @@ def add_team(data):
         count = con.execute("SELECT COUNT(*) AS c FROM teams").fetchone()["c"]
         if count >= MAX_TEAMS:
             return 400, {"error": f"Turnaj je plný ({MAX_TEAMS} týmů)."}
-        cur = con.execute("INSERT INTO teams (father, son) VALUES (?, ?)", (father, son))
+        cur = con.execute(
+            "INSERT INTO teams (father, son, contact, phone, email) VALUES (?, ?, ?, ?, ?)",
+            (father, son,
+             str(data.get("contact", "")).strip() or None,
+             str(data.get("phone", "")).strip() or None,
+             str(data.get("email", "")).strip() or None),
+        )
         new_id = cur.lastrowid
         if con.execute("SELECT value FROM meta WHERE key='schedule'").fetchone():
             for r in con.execute("SELECT id FROM teams WHERE id != ?", (new_id,)):
@@ -247,6 +261,21 @@ def clear_result(match_id):
         return 200, compute_state(con)
 
 
+def update_contact(team_id, data):
+    with lock, get_db() as con:
+        row = con.execute("SELECT id FROM teams WHERE id = ?", (team_id,)).fetchone()
+        if not row:
+            return 404, {"error": "Tým nenalezen."}
+        con.execute(
+            "UPDATE teams SET contact=?, phone=?, email=? WHERE id = ?",
+            (str(data.get("contact", "")).strip() or None,
+             str(data.get("phone", "")).strip() or None,
+             str(data.get("email", "")).strip() or None,
+             team_id),
+        )
+        return 200, compute_state(con)
+
+
 def reset(data):
     if not check_admin(data):
         return 403, {"error": "Tato akce je jen pro správce (špatný PIN)."}
@@ -275,6 +304,12 @@ def route(method, path, data):
                 result = 403, {"error": "Špatný PIN."}
         elif path == "/api/schedule":
             result = create_schedule(data)
+        elif path.startswith("/api/teams/") and path.endswith("/contact"):
+            try:
+                team_id = int(path.split("/")[3])
+                result = update_contact(team_id, data)
+            except ValueError:
+                result = 400, {"error": "Špatné ID týmu"}
         elif path.startswith("/api/teams/") and path.endswith("/delete"):
             try:
                 team_id = int(path.split("/")[3])
