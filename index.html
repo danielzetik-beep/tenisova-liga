@@ -27,7 +27,10 @@
   .main-col { min-width:0; }
   .side-col .card { position:sticky; top:16px; }
   #contactList { grid-template-columns:1fr; }
-  #contactsSection { font-size:.85em; }
+  #contactsSection { font-size:.78em; }
+  #contactList .score-line { gap:4px; padding:8px 10px; }
+  #contactList .score-line a { padding:4px 8px; font-size:.75rem; }
+  #contactList .score-line button { padding:4px 8px; font-size:.75rem; }
   @media (max-width: 940px) {
     .layout { grid-template-columns:1fr; }
     .side-col .card { position:static; }
@@ -121,8 +124,8 @@
   a.partner { text-decoration:none; }
   a.partner:hover { filter:brightness(1.05); box-shadow:0 2px 8px rgba(11,61,46,.15); }
   #contactList .score-line a {
-    color:var(--bg); font-weight:700; text-decoration:none; padding:7px 10px;
-    border:1px solid var(--line); border-radius:8px; background:#fff; font-size:.82rem;
+    color:var(--bg); font-weight:700; text-decoration:none;
+    border:1px solid var(--line); border-radius:8px; background:#fff;
   }
   #contactList .score-line a:hover { background:var(--win); }
   #contactList a.wabtn { background:#25d366; border-color:#1eb85a; color:#fff; }
