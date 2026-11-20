@@ -27,6 +27,7 @@
   .main-col { min-width:0; }
   .side-col .card { position:sticky; top:16px; }
   #contactList { grid-template-columns:1fr; }
+  #contactsSection { font-size:.85em; }
   @media (max-width: 940px) {
     .layout { grid-template-columns:1fr; }
     .side-col .card { position:static; }
@@ -191,23 +192,6 @@
     </div>
   </section>
 
-  </div>
-  <aside class="side-col">
-  <section class="card" id="contactsSection">
-    <h2>Kontakty účastníků 📞</h2>
-    <p class="note">Kontakty jsou viditelné jen účastníkům ligy. Kliknutím na WhatsApp otevřete chat přímo s daným rodičem – nemusíte psát do společné skupiny.</p>
-    <div id="contactList" class="matches"></div>
-    <div id="contactEditBox" style="display:none; margin-top:14px;">
-      <form class="reg-form" onsubmit="event.preventDefault(); saveContact();">
-        <label>Kontakt – jméno <input id="ceName"></label>
-        <label>Telefon <input id="cePhone" placeholder="např. 608 917 416"></label>
-        <label>E-mail <input id="ceEmail" type="email"></label>
-        <button type="submit">Uložit kontakt</button>
-        <button type="button" class="secondary" onclick="hideContactEdit()">Zrušit</button>
-      </form>
-    </div>
-  </section>
-
   <section class="card" id="tableSection" style="display:none;">
     <h2>Tabulka</h2>
     <table id="standings">
@@ -224,6 +208,21 @@
     <div id="matchList" class="matches"></div>
   </section>
   </div>
+  <aside class="side-col">
+  <section class="card" id="contactsSection">
+    <h2>Kontakty účastníků 📞</h2>
+    <p class="note">Kontakty jsou viditelné jen účastníkům ligy. Kliknutím na WhatsApp otevřete chat přímo s daným rodičem – nemusíte psát do společné skupiny.</p>
+    <div id="contactList" class="matches"></div>
+    <div id="contactEditBox" style="display:none; margin-top:14px;">
+      <form class="reg-form" onsubmit="event.preventDefault(); saveContact();">
+        <label>Kontakt – jméno <input id="ceName"></label>
+        <label>Telefon <input id="cePhone" placeholder="např. 608 917 416"></label>
+        <label>E-mail <input id="ceEmail" type="email"></label>
+        <button type="submit">Uložit kontakt</button>
+        <button type="button" class="secondary" onclick="hideContactEdit()">Zrušit</button>
+      </form>
+    </div>
+  </section>
   </aside>
  </div>
 </main>
