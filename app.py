@@ -46,6 +46,9 @@ def init_db():
             "UNIQUE(team1_id, team2_id))"
         )
         con.execute("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT)")
+        mcols = [r["name"] for r in con.execute("PRAGMA table_info(matches)")]
+        if mcols and "photo" not in mcols:
+            con.execute("ALTER TABLE matches ADD COLUMN photo TEXT")
 
 
 def team_dict(con, team_id):
@@ -276,6 +279,22 @@ def update_contact(team_id, data):
         return 200, compute_state(con)
 
 
+def set_photo(match_id, data):
+    photo = data.get("photo")
+    if photo is not None:
+        photo = str(photo)
+        if not photo.startswith("data:image/"):
+            return 400, {"error": "Neplatný formát fotky."}
+        if len(photo) > 8_000_000:
+            return 400, {"error": "Fotka je moc velká (zkuste menší, max cca 6 MB)."}
+    with lock, get_db() as con:
+        row = con.execute("SELECT id FROM matches WHERE id = ?", (match_id,)).fetchone()
+        if not row:
+            return 404, {"error": "Zápas nenalezen."}
+        con.execute("UPDATE matches SET photo=? WHERE id=?", (photo, match_id))
+        return 200, compute_state(con)
+
+
 def reset(data):
     if not check_admin(data):
         return 403, {"error": "Tato akce je jen pro správce (špatný PIN)."}
@@ -320,6 +339,12 @@ def route(method, path, data):
             try:
                 match_id = int(path.split("/")[3])
                 result = set_result(match_id, data)
+            except ValueError:
+                result = 400, {"error": "Špatné ID zápasu"}
+        elif path.startswith("/api/match/") and path.endswith("/photo"):
+            try:
+                match_id = int(path.split("/")[3])
+                result = set_photo(match_id, data)
             except ValueError:
                 result = 400, {"error": "Špatné ID zápasu"}
         elif path.startswith("/api/match/") and path.endswith("/clear"):
