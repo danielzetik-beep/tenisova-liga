@@ -91,7 +91,7 @@
   .match .pair .winner { color:#8a6d00; }
   .match.decided { border-left:5px solid var(--accent2); }
   .score-line { display:flex; gap:6px; align-items:center; flex-wrap:wrap; padding:10px 14px; background:#f1f6f2; border-top:1px solid var(--line); font-size:.85rem; }
-  .score-line input[type=number] { width:44px; padding:7px 8px; flex:none; }
+  .score-line input[type=number] { width:48px; padding:7px 8px; flex:none; }
   .score-line input[type=date] { flex:none; width:118px; padding:7px 8px; }
   .score-line .lbl { flex:none; }
   .score-line .lbl { color:var(--muted); font-weight:600; font-size:.75rem; text-transform:uppercase; }
@@ -570,8 +570,8 @@ function renderMatch(m) {
   div.appendChild(pair);
 
   const btn = (!decided || editing)
-    ? '<button onclick="saveResult(' + m.id + ')">Uložit</button>'
-    : '<button onclick="startEdit(' + m.id + ')">Editovat</button>';
+    ? '<button style="margin-left:auto" onclick="saveResult(' + m.id + ')">Uložit</button>'
+    : '<button style="margin-left:auto" onclick="startEdit(' + m.id + ')">Editovat</button>';
   const rowSets = document.createElement("div");
   rowSets.className = "score-line";
   rowSets.innerHTML =
