@@ -23,7 +23,7 @@
   header h1 { margin:0; font-size:2.5rem; font-weight:800; letter-spacing:.5px; text-transform:uppercase; }
   header p { margin:8px 0 0; opacity:.85; font-size:1.2rem; }
   main { max-width:1280px; margin:0 auto; padding:24px 16px 60px; }
-  .layout { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:22px; align-items:start; }
+  .layout { display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:22px; align-items:start; }
   .main-col { min-width:0; }
   .side-col .card { position:sticky; top:16px; }
   #contactList { grid-template-columns:1fr; }
@@ -90,7 +90,7 @@
   .match .pair .mid { color:var(--muted); font-size:.8rem; font-weight:700; text-transform:uppercase; }
   .match .pair .winner { color:#8a6d00; }
   .match.decided { border-left:5px solid var(--accent2); }
-  .score-line { display:flex; gap:6px; align-items:center; flex-wrap:nowrap; overflow-x:auto; padding:10px 14px; background:#f1f6f2; border-top:1px solid var(--line); font-size:.85rem; }
+  .score-line { display:flex; gap:6px; align-items:center; flex-wrap:wrap; padding:10px 14px; background:#f1f6f2; border-top:1px solid var(--line); font-size:.85rem; }
   .score-line input[type=number] { width:44px; padding:7px 8px; flex:none; }
   .score-line input[type=date] { flex:none; width:118px; padding:7px 8px; }
   .score-line .lbl { flex:none; }
@@ -550,12 +550,12 @@ function renderMatch(m) {
     '<span class="' + (w2 ? "winner" : "") + '">' + teamName(m.team2) + "</span>";
   div.appendChild(pair);
 
-  const row = document.createElement("div");
-  row.className = "score-line";
   const btn = (!decided || editing)
     ? '<button onclick="saveResult(' + m.id + ')">Uložit</button>'
     : '<button onclick="startEdit(' + m.id + ')">Editovat ✏️</button>';
-  row.innerHTML =
+  const rowSets = document.createElement("div");
+  rowSets.className = "score-line";
+  rowSets.innerHTML =
     '<span class="lbl">Set 1</span>' +
     '<input type="number" min="0" id="s1a-' + m.id + '" value="' + (m.s1a ?? "") + '"' + dis + '>' +
     '<span>:</span>' +
@@ -563,7 +563,11 @@ function renderMatch(m) {
     '<span class="lbl">Set 2</span>' +
     '<input type="number" min="0" id="s2a-' + m.id + '" value="' + (m.s2a ?? "") + '"' + dis + '>' +
     '<span>:</span>' +
-    '<input type="number" min="0" id="s2b-' + m.id + '" value="' + (m.s2b ?? "") + '"' + dis + '>' +
+    '<input type="number" min="0" id="s2b-' + m.id + '" value="' + (m.s2b ?? "") + '"' + dis + '>';
+  div.appendChild(rowSets);
+  const rowAct = document.createElement("div");
+  rowAct.className = "score-line";
+  rowAct.innerHTML =
     '<span class="lbl">TB 1:1</span>' +
     '<input type="number" min="0" id="tb1-' + m.id + '" value="' + (m.tb1 ?? "") + '"' + dis + '>' +
     '<span>:</span>' +
@@ -571,7 +575,7 @@ function renderMatch(m) {
     '<input type="date" id="d-' + m.id + '" value="' + (m.played || "") + '" title="Datum zápasu"' + dis + '>' +
     btn +
     (editing ? '<button class="secondary" onclick="clearResult(' + m.id + ')">Smazat</button>' : "");
-  div.appendChild(row);
+  div.appendChild(rowAct);
   const prow = document.createElement("div");
   prow.className = "score-line";
   if (m.photo) {
