@@ -340,6 +340,21 @@ async function saveResult(id) {
   } catch (e) { showMsg(e.message, false); }
 }
 
+function openLightbox(id) {
+  const src = window.__photos && window.__photos[id];
+  if (!src) return;
+  let ov = document.getElementById("lightbox");
+  if (!ov) {
+    ov = document.createElement("div");
+    ov.id = "lightbox";
+    ov.style.cssText = "position:fixed; inset:0; background:rgba(0,0,0,.85); display:none; align-items:center; justify-content:center; z-index:1000; cursor:zoom-out;";
+    ov.onclick = "this.style.display='none'";
+    document.body.appendChild(ov);
+  }
+  ov.innerHTML = '<img src="' + src + '" alt="Foto ze zápasu" style="max-width:95vw; max-height:90vh; border-radius:12px;">';
+  ov.style.display = "flex";
+}
+
 async function uploadPhoto(id, file) {
   if (!file) return;
   const reader = new FileReader();
@@ -464,6 +479,9 @@ function render() {
     }
     list.appendChild(li);
   }
+  window.__photos = {};
+  for (const m of state.matches) if (m.photo) window.__photos[m.id] = m.photo;
+
   const cl = document.getElementById("contactList");
   cl.innerHTML = "";
   for (const t of state.teams) {
@@ -578,14 +596,15 @@ function renderMatch(m) {
   div.appendChild(rowAct);
   const prow = document.createElement("div");
   prow.className = "score-line";
-  if (m.photo) {
-    prow.innerHTML = '<a href="' + m.photo + '" target="_blank" rel="noopener"><img src="' + m.photo + '" alt="Foto ze zápasu" style="height:44px; border-radius:8px; display:block;"></a>' +
-      '<button class="secondary" onclick="removePhoto(' + m.id + ')">✕ Smazat fotku</button>';
-  } else {
-    prow.innerHTML = '<span>📷</span>' +
-      '<button class="secondary" onclick="document.getElementById(\'photo-' + m.id + '\').click()">Přidat fotku</button>' +
+  let ph = "";
+  if (m.photo) ph += '<button class="secondary" onclick="openLightbox(' + m.id + ')">🖼️ Zobrazit fotku</button>';
+  if (editing) {
+    ph += '<button class="secondary" onclick="document.getElementById(\'photo-' + m.id + '\').click()">📷 ' + (m.photo ? "Změnit fotku" : "Přidat fotku") + '</button>' +
       '<input type="file" id="photo-' + m.id + '" accept="image/*" style="display:none" onchange="uploadPhoto(' + m.id + ', this.files[0])">';
+    if (m.photo) ph += '<button class="secondary" onclick="removePhoto(' + m.id + ')">✕ Odstranit fotku</button>';
   }
+  if (!ph) ph = '<span class="note">📷 žádná fotka</span>';
+  prow.innerHTML = ph;
   div.appendChild(prow);
   if (m.played) {
     const d = document.createElement("div");
