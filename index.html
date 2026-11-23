@@ -571,7 +571,7 @@ function renderMatch(m) {
 
   const btn = (!decided || editing)
     ? '<button onclick="saveResult(' + m.id + ')">Uložit</button>'
-    : '<button onclick="startEdit(' + m.id + ')">Editovat ✏️</button>';
+    : '<button onclick="startEdit(' + m.id + ')">Editovat</button>';
   const rowSets = document.createElement("div");
   rowSets.className = "score-line";
   rowSets.innerHTML =
